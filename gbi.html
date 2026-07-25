@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GBI — نظام متابعة الإنتاج</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#13100c;
+    --panel:#1d1812;
+    --panel-2:#241d15;
+    --line:#3a2f20;
+    --gold:#c9a227;
+    --gold-bright:#e8c752;
+    --text:#f2ecdd;
+    --muted:#948a74;
+    --rust:#b85433;
+    --green:#7a9a5c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, #241c12 0%, transparent 45%),
+      radial-gradient(circle at 85% 100%, #201a10 0%, transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Tajawal', sans-serif;
+    min-height:100vh;
+    direction:rtl;
+  }
+  .display{font-family:'Cairo', sans-serif;}
+  ::selection{background:var(--gold);color:#13100c;}
+
+  /* ===== Login ===== */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    gap:28px;
+  }
+  .seal{
+    width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #2c2418, #171310 70%);
+    border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 6px rgba(201,162,39,0.08), inset 0 0 18px rgba(0,0,0,0.6);
+    position:relative;
+  }
+  .seal::before{
+    content:"";
+    position:absolute;inset:10px;
+    border:1px solid rgba(201,162,39,0.35);
+    border-radius:50%;
+  }
+  .seal span{
+    font-family:'Cairo',sans-serif;
+    font-weight:900;
+    font-size:30px;
+    letter-spacing:1px;
+    color:var(--gold-bright);
+    text-shadow:0 1px 0 #000, 0 0 12px rgba(232,199,82,0.35);
+  }
+  .seal.stamp{animation:stampDown .5s cubic-bezier(.2,1.4,.4,1);}
+  @keyframes stampDown{
+    0%{transform:scale(1.4) rotate(-8deg);opacity:0;}
+    55%{transform:scale(0.92) rotate(2deg);opacity:1;}
+    100%{transform:scale(1) rotate(0);}
+  }
+  .brandline{text-align:center;}
+  .brandline h1{font-family:'Cairo',sans-serif;font-weight:900;font-size:26px;letter-spacing:.5px;}
+  .brandline p{color:var(--muted);font-size:13px;margin-top:4px;}
+
+  .loginCard{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:28px;
+    width:100%;max-width:340px;
+    box-shadow:0 20px 40px rgba(0,0,0,0.4);
+  }
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .field input, .field select{
+    width:100%;
+    background:#0f0c09;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:11px 13px;
+    color:var(--text);
+    font-family:'Tajawal',sans-serif;
+    font-size:15px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus, .field select:focus{border-color:var(--gold);}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:linear-gradient(180deg,var(--gold-bright),var(--gold));
+    color:#1b1508;
+    font-weight:700;
+    border:none;
+    border-radius:8px;
+    padding:12px 18px;
+    font-family:'Tajawal',sans-serif;
+    font-size:15px;
+    cursor:pointer;
+    width:100%;
+    transition:transform .12s, filter .15s;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn:active{transform:scale(0.97);}
+  .btn.secondary{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--text);
+  }
+  .btn.danger{background:linear-gradient(180deg,#c9633f,var(--rust));color:#fff;}
+  .errMsg{color:var(--rust);font-size:13px;margin-top:10px;min-height:16px;}
+  .hint{color:var(--muted);font-size:12px;text-align:center;margin-top:14px;line-height:1.7;}
+
+  /* ===== App shell ===== */
+  #app{display:none;min-height:100vh;flex-direction:column;}
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 22px;
+    border-bottom:1px solid var(--line);
+    background:rgba(29,24,18,0.6);
+    position:sticky;top:0;z-index:20;
+    backdrop-filter:blur(6px);
+  }
+  .topbar .brand{display:flex;align-items:center;gap:12px;}
+  .miniSeal{
+    width:38px;height:38px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#2c2418,#171310 70%);
+    border:1.5px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Cairo',sans-serif;font-weight:900;font-size:12px;color:var(--gold-bright);
+  }
+  .topbar h2{font-family:'Cairo',sans-serif;font-size:17px;}
+  .topbar .userchip{font-size:12px;color:var(--muted);}
+  .topbar .actions{display:flex;gap:10px;align-items:center;}
+  .iconbtn{
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:'Tajawal',sans-serif;
+  }
+  .iconbtn:hover{color:var(--text);border-color:var(--gold);}
+
+  main{flex:1;padding:26px 22px 60px;max-width:1100px;margin:0 auto;width:100%;}
+
+  /* dashboard grid */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:16px;
+    margin-top:22px;
+  }
+  .cardTile{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px 18px;
+    cursor:pointer;
+    transition:transform .15s, border-color .15s, box-shadow .15s;
+    position:relative;
+    overflow:hidden;
+  }
+  .cardTile::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(135deg, rgba(201,162,39,0.06), transparent 60%);
+    opacity:0;transition:opacity .2s;
+  }
+  .cardTile:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 12px 24px rgba(0,0,0,0.35);}
+  .cardTile:hover::after{opacity:1;}
+  .cardTile .ico{font-size:26px;margin-bottom:12px;display:block;}
+  .cardTile h3{font-family:'Cairo',sans-serif;font-size:16px;margin-bottom:6px;}
+  .cardTile p{font-size:12px;color:var(--muted);}
+  .cardTile .count{
+    position:absolute;top:16px;left:16px;
+    background:rgba(201,162,39,0.14);color:var(--gold-bright);
+    font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;
+  }
+
+  .pageTitle{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  .pageTitle h2{font-family:'Cairo',sans-serif;font-size:21px;display:flex;align-items:center;gap:10px;}
+  .back{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;font-family:'Tajawal',sans-serif;}
+  .back:hover{color:var(--gold-bright);}
+
+  /* summary strip */
+  .summary{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:12px;margin-bottom:20px;
+  }
+  .sumBox{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;
+  }
+  .sumBox .n{font-family:'Cairo',sans-serif;font-weight:800;font-size:20px;color:var(--gold-bright);}
+  .sumBox .l{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  /* form panel */
+  .panel{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:20px;margin-bottom:22px;
+  }
+  .panel h4{font-family:'Cairo',sans-serif;font-size:14px;color:var(--gold-bright);margin-bottom:14px;}
+  .formGrid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;align-items:end;
+  }
+  .formGrid .full{grid-column:1/-1;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:right;color:var(--muted);font-weight:600;font-size:12px;
+    padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  tbody td{padding:12px 10px;border-bottom:1px solid rgba(58,47,32,0.5);vertical-align:middle;}
+  tbody tr:hover{background:rgba(201,162,39,0.04);}
+  .tag{
+    display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;
+    background:rgba(201,162,39,0.12);color:var(--gold-bright);border:1px solid rgba(201,162,39,0.25);
+  }
+  .rowActions{display:flex;gap:6px;}
+  .rowActions button{
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:'Tajawal',sans-serif;
+  }
+  .rowActions button:hover{border-color:var(--gold);color:var(--text);}
+  .rowActions button.del:hover{border-color:var(--rust);color:#e08a6f;}
+
+  .emptyState{
+    text-align:center;padding:50px 20px;color:var(--muted);
+  }
+  .emptyState .ico{font-size:36px;display:block;margin-bottom:10px;}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--panel);border:1px solid var(--gold);color:var(--text);
+    padding:12px 20px;border-radius:10px;font-size:13.5px;
+    display:flex;align-items:center;gap:10px;
+    opacity:0;pointer-events:none;transition:all .25s;
+    z-index:50;box-shadow:0 10px 24px rgba(0,0,0,0.4);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast .tstamp{
+    width:20px;height:20px;border-radius:50%;background:var(--gold);color:#1b1508;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;
+  }
+
+  input[type=search]{
+    background:#0f0c09;border:1px solid var(--line);border-radius:8px;
+    padding:9px 13px;color:var(--text);font-family:'Tajawal',sans-serif;font-size:13.5px;
+  }
+  select{cursor:pointer;}
+  ::placeholder{color:#5c5546;}
+
+  footer.foot{
+    text-align:center;color:var(--muted);font-size:11.5px;padding:18px;border-top:1px solid var(--line);
+  }
+
+  @media (max-width:640px){
+    table thead{display:none;}
+    tbody tr{display:block;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:8px 4px;}
+    tbody td{display:flex;justify-content:space-between;border:none;padding:8px 12px;font-size:13px;}
+    tbody td::before{content:attr(data-label);color:var(--muted);font-size:11.5px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="seal" id="loginSeal"><span>GBI</span></div>
+  <div class="brandline">
+    <h1 class="display">GBI — نظام متابعة الإنتاج</h1>
+    <p>تسجيل الدخول للمتابعة المركزية</p>
+  </div>
+  <div class="loginCard">
+    <div class="field">
+      <label>اسم المستخدم</label>
+      <input type="text" id="userInput" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>كلمة المرور</label>
+      <input type="password" id="passInput" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn" id="loginBtn">دخول</button>
+    <div class="errMsg" id="loginErr"></div>
+    <div class="hint">أول مرة تدخل بيها؟ استخدم admin / 1234 ثم غيّرها من الإعدادات.</div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="miniSeal">GBI</div>
+      <h2 class="display">نظام المتابعة المركزية</h2>
+    </div>
+    <div class="actions">
+      <span class="userchip" id="userChip"></span>
+      <button class="iconbtn" id="settingsBtn">الإعدادات</button>
+      <button class="iconbtn" id="logoutBtn">خروج</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Dashboard -->
+    <div id="dashboardView">
+      <div class="pageTitle">
+        <h2 class="display">الخانات الرئيسية</h2>
+      </div>
+      <div class="grid" id="dashGrid"></div>
+    </div>
+
+    <!-- Section view -->
+    <div id="sectionView" style="display:none;">
+      <div class="pageTitle">
+        <div>
+          <button class="back" id="backBtn">→ رجوع للوحة الرئيسية</button>
+          <h2 class="display" id="sectionTitle" style="margin-top:8px;"></h2>
+        </div>
+        <input type="search" id="searchInput" placeholder="بحث بالاسم أو رقم الباركود...">
+      </div>
+
+      <div class="summary" id="summaryStrip"></div>
+
+      <div class="panel">
+        <h4>إضافة قيد جديد</h4>
+        <div class="formGrid">
+          <div class="field" style="margin-bottom:0;">
+            <label>الصنف</label>
+            <select id="f_type">
+              <option value="جنيه">جنيه ذهب</option>
+              <option value="نص جنيه">نص جنيه</option>
+              <option value="ربع جنيه">ربع جنيه</option>
+              <option value="توله">توله</option>
+              <option value="أخرى">صنف آخر</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;" id="f_customWrap" style="display:none;">
+            <label>اسم الصنف (لو أخرى)</label>
+            <input type="text" id="f_custom" placeholder="اكتب اسم الصنف">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>الوزن (جرام)</label>
+            <input type="number" step="0.001" id="f_weight" placeholder="مثال: 8.000">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>العدد</label>
+            <input type="number" step="1" id="f_qty" placeholder="مثال: 1" value="1">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>رقم الباركود</label>
+            <input type="text" id="f_barcode" placeholder="اختياري">
+          </div>
+          <div class="field full" style="margin-bottom:0;">
+            <label>ملاحظات</label>
+            <input type="text" id="f_notes" placeholder="اختياري">
+          </div>
+          <div>
+            <button class="btn" id="addBtn">إضافة القيد</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="padding:0;overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>الصنف</th>
+              <th>الوزن (جم)</th>
+              <th>العدد</th>
+              <th>الباركود</th>
+              <th>ملاحظات</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="emptyState" id="emptyState" style="display:none;">
+          <span class="ico">◌</span>
+          لا توجد قيود بعد في هذه الخانة
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="foot">GBI · نظام المتابعة المركزية — البيانات محفوظة تلقائيًا</footer>
+</div>
+
+<div class="toast" id="toast"><span class="tstamp">GBI</span><span id="toastMsg"></span></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ================= FIREBASE ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDcQEneU25YE2V7im53zCaHge3X5jxmiMc",
+  authDomain: "gbi-production-be283.firebaseapp.com",
+  projectId: "gbi-production-be283",
+  storageBucket: "gbi-production-be283.firebasestorage.app",
+  messagingSenderId: "56637698883",
+  appId: "1:56637698883:web:8ce69fcfff708504a4f5f6"
+};
+let db = null;
+try{
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+}catch(e){
+  console.warn('Firebase init failed (will use local fallback until Firebase is reachable):', e);
+}
+
+/* ================= CONFIG ================= */
+const SECTIONS = [
+  {key:'baraqod',  name:'الباركود',      icon:'▤', desc:'تسجيل وحصر أرقام الباركود'},
+  {key:'damgha',   name:'الدمغة',        icon:'◉', desc:'قيود الدمغة والمعايرة'},
+  {key:'jard',     name:'الجرد اليومي',  icon:'▦', desc:'الجرد اليومي للأصناف'},
+  {key:'tashgheel',name:'تحت التشغيل',   icon:'⚙', desc:'الأصناف تحت التشغيل حاليًا'},
+  {key:'khaam',    name:'الخام',         icon:'▮', desc:'رصيد الذهب الخام'},
+];
+const AUTH_KEY = 'gbi_auth_v1';
+let currentUser = null;
+let currentSectionKey = null;
+let sectionCache = {}; // key -> array of entries
+const memoryDB = {}; // in-memory fallback if persistent storage is unavailable
+
+/* ================= HELPERS ================= */
+function $(id){return document.getElementById(id);}
+function uid(){return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);}
+function todayStr(){
+  const d = new Date();
+  return d.toLocaleDateString('ar-EG', {year:'numeric', month:'2-digit', day:'2-digit'});
+}
+function showToast(msg){
+  $('toastMsg').textContent = msg;
+  const t = $('toast');
+  t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ================= AUTH ================= */
+async function loadAuth(){
+  try{
+    if(!db) throw new Error('Firestore not available');
+    const snap = await db.collection('meta').doc('auth').get();
+    if(snap.exists) return snap.data();
+    const def = {username:'admin', password:'1234'};
+    await db.collection('meta').doc('auth').set(def);
+    return def;
+  }catch(e){
+    console.warn('loadAuth fallback:', e);
+    if(memoryDB[AUTH_KEY]) return JSON.parse(memoryDB[AUTH_KEY]);
+    const def = {username:'admin', password:'1234'};
+    memoryDB[AUTH_KEY] = JSON.stringify(def);
+    return def;
+  }
+}
+async function saveAuth(auth){
+  try{
+    if(!db) throw new Error('Firestore not available');
+    await db.collection('meta').doc('auth').set(auth);
+  }
+  catch(e){ memoryDB[AUTH_KEY] = JSON.stringify(auth); }
+}
+
+$('loginBtn').addEventListener('click', doLogin);
+$('passInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+$('userInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+
+async function doLogin(){
+  const u = $('userInput').value.trim();
+  const p = $('passInput').value;
+  $('loginErr').textContent = '';
+  const auth = await loadAuth();
+  if(u === auth.username.trim() && p === auth.password){
+    currentUser = u;
+    $('loginSeal').classList.remove('stamp'); void $('loginSeal').offsetWidth; $('loginSeal').classList.add('stamp');
+    setTimeout(async ()=>{
+      $('loginScreen').style.display = 'none';
+      $('app').style.display = 'flex';
+      $('userChip').textContent = 'مسجّل دخول: ' + currentUser;
+      try{
+        await renderDashboard();
+      }catch(err){
+        console.error('renderDashboard error:', err);
+        $('dashGrid').innerHTML = '<div class="emptyState">حصل خطأ أثناء تحميل الخانات، جرّب تعمل تحديث للصفحة</div>';
+      }
+    }, 380);
+  }else{
+    $('loginErr').textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
+  }
+}
+
+$('logoutBtn').addEventListener('click', ()=>{
+  currentUser = null;
+  $('app').style.display = 'none';
+  $('loginScreen').style.display = 'flex';
+  $('userInput').value=''; $('passInput').value='';
+});
+
+$('settingsBtn').addEventListener('click', async ()=>{
+  const auth = await loadAuth();
+  const newUser = prompt('اسم المستخدم الجديد:', auth.username);
+  if(newUser === null) return;
+  const newPass = prompt('كلمة المرور الجديدة:', auth.password);
+  if(newPass === null) return;
+  if(!newUser.trim() || !newPass.trim()){ alert('البيانات لا يمكن أن تكون فارغة'); return; }
+  await saveAuth({username:newUser.trim(), password:newPass});
+  showToast('تم تحديث بيانات الدخول');
+});
+
+/* ================= DATA ================= */
+async function loadSection(key){
+  try{
+    if(!db) throw new Error('Firestore not available');
+    const snap = await db.collection('sections').doc(key).get();
+    sectionCache[key] = snap.exists ? (snap.data().entries || []) : [];
+  }catch(e){
+    console.warn('loadSection fallback for', key, e);
+    const dbKey = 'gbi_section_' + key;
+    if(memoryDB[dbKey]) sectionCache[key] = JSON.parse(memoryDB[dbKey]);
+    else sectionCache[key] = sectionCache[key] || [];
+  }
+  return sectionCache[key];
+}
+async function persistSection(key){
+  try{
+    if(!db) throw new Error('Firestore not available');
+    await db.collection('sections').doc(key).set({entries: sectionCache[key]});
+  }
+  catch(e){
+    console.warn('persistSection fallback for', key, e);
+    memoryDB['gbi_section_' + key] = JSON.stringify(sectionCache[key]);
+  }
+}
+
+/* ================= DASHBOARD ================= */
+async function renderDashboard(){
+  const grid = $('dashGrid');
+  grid.innerHTML = '';
+  for(const s of SECTIONS){
+    let entries = [];
+    try{ entries = await loadSection(s.key); }catch(e){ console.warn('tile load fail', s.key, e); }
+    const card = document.createElement('div');
+    card.className = 'cardTile';
+    card.innerHTML = `
+      <span class="count">${(entries||[]).length} قيد</span>
+      <span class="ico">${s.icon}</span>
+      <h3 class="display">${s.name}</h3>
+      <p>${s.desc}</p>
+    `;
+    card.addEventListener('click', ()=>openSection(s.key));
+    grid.appendChild(card);
+  }
+  $('dashboardView').style.display = 'block';
+  $('sectionView').style.display = 'none';
+}
+
+/* ================= SECTION VIEW ================= */
+$('backBtn').addEventListener('click', renderDashboard);
+
+$('f_type').addEventListener('change', ()=>{
+  $('f_customWrap').style.display = $('f_type').value === 'أخرى' ? 'block' : 'none';
+});
+
+$('searchInput').addEventListener('input', ()=>renderTable());
+
+$('addBtn').addEventListener('click', async ()=>{
+  const type = $('f_type').value;
+  const custom = $('f_custom').value.trim();
+  const weight = parseFloat($('f_weight').value);
+  const qty = parseInt($('f_qty').value) || 1;
+  const barcode = $('f_barcode').value.trim();
+  const notes = $('f_notes').value.trim();
+
+  if(type === 'أخرى' && !custom){ alert('اكتب اسم الصنف'); return; }
+  if(isNaN(weight) || weight <= 0){ alert('من فضلك أدخل وزن صحيح'); return; }
+
+  const entry = {
+    id: uid(),
+    type: type === 'أخرى' ? custom : type,
+    weight, qty, barcode, notes,
+    date: todayStr(),
+    ts: Date.now()
+  };
+  sectionCache[currentSectionKey].unshift(entry);
+  await persistSection(currentSectionKey);
+
+  $('f_weight').value=''; $('f_qty').value='1'; $('f_barcode').value=''; $('f_notes').value=''; $('f_custom').value='';
+  renderTable();
+  showToast('تم تسجيل القيد بختم GBI');
+});
+
+async function openSection(key){
+  currentSectionKey = key;
+  const s = SECTIONS.find(x=>x.key===key);
+  $('sectionTitle').textContent = s.icon + '  ' + s.name;
+  $('searchInput').value = '';
+  await loadSection(key);
+  $('dashboardView').style.display = 'none';
+  $('sectionView').style.display = 'block';
+  renderTable();
+}
+
+function renderTable(){
+  const entries = sectionCache[currentSectionKey] || [];
+  const q = $('searchInput').value.trim().toLowerCase();
+  const filtered = q ? entries.filter(e =>
+      (e.type||'').toLowerCase().includes(q) ||
+      (e.barcode||'').toLowerCase().includes(q) ||
+      (e.notes||'').toLowerCase().includes(q)
+    ) : entries;
+
+  // summary
+  const totalWeight = entries.reduce((a,e)=>a+e.weight*e.qty,0);
+  const totalQty = entries.reduce((a,e)=>a+e.qty,0);
+  const byType = {};
+  entries.forEach(e=>{ byType[e.type] = (byType[e.type]||0) + e.weight*e.qty; });
+  let sumHtml = `
+    <div class="sumBox"><div class="n">${totalWeight.toFixed(3)}</div><div class="l">إجمالي الوزن (جم)</div></div>
+    <div class="sumBox"><div class="n">${totalQty}</div><div class="l">إجمالي العدد</div></div>
+    <div class="sumBox"><div class="n">${entries.length}</div><div class="l">عدد القيود</div></div>
+  `;
+  Object.keys(byType).slice(0,3).forEach(t=>{
+    sumHtml += `<div class="sumBox"><div class="n">${byType[t].toFixed(3)}</div><div class="l">${t} (جم)</div></div>`;
+  });
+  $('summaryStrip').innerHTML = sumHtml;
+
+  const tbody = $('tbody');
+  tbody.innerHTML = '';
+  $('emptyState').style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach(e=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td data-label="التاريخ">${e.date}</td>
+      <td data-label="الصنف"><span class="tag">${e.type}</span></td>
+      <td data-label="الوزن">${e.weight.toFixed(3)}</td>
+      <td data-label="العدد">${e.qty}</td>
+      <td data-label="الباركود">${e.barcode || '—'}</td>
+      <td data-label="ملاحظات">${e.notes || '—'}</td>
+      <td data-label="">
+        <div class="rowActions">
+          <button class="del" data-id="${e.id}">حذف</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('.del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('حذف هذا القيد نهائيًا؟')) return;
+      const id = btn.getAttribute('data-id');
+      sectionCache[currentSectionKey] = sectionCache[currentSectionKey].filter(x=>x.id!==id);
+      await persistSection(currentSectionKey);
+      renderTable();
+      showToast('تم حذف القيد');
+    });
+  });
+}
+</script>
+</body>
+</html>
