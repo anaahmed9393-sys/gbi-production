@@ -7,6 +7,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- مكتبات التصدير: إكسل (SheetJS) و PDF (jsPDF + AutoTable) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --primary: #4f46e5;
@@ -339,6 +343,94 @@
             box-shadow: 0 15px 40px rgba(0,0,0,0.08);
             text-align: center;
         }
+
+        /* Role badge */
+        .role-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .role-quality_manager { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+        .role-auditor { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+        .role-reviewer { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+
+        /* NC corrective-action panel */
+        .nc-extra {
+            background: var(--danger-bg);
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .nc-extra label {
+            font-weight: 700;
+            font-size: 12.5px;
+            display: block;
+            margin-bottom: 4px;
+            color: var(--danger);
+        }
+
+        /* Audit log */
+        .log-table th, .log-table td { font-size: 12.5px; padding: 10px 14px; }
+        .btn-outline {
+            background: #ffffff;
+            color: var(--primary);
+            border: 1.5px solid var(--primary);
+        }
+        .btn-outline:hover { background: var(--primary-light); box-shadow: none; }
+        .btn-danger-outline {
+            background: #ffffff;
+            color: var(--danger);
+            border: 1.5px solid var(--danger);
+            padding: 6px 12px;
+            font-size: 12.5px;
+        }
+        .btn-danger-outline:hover { background: var(--danger-bg); box-shadow: none; }
+
+        .email-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border: 1px solid #c7d2fe;
+            padding: 6px 8px 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .email-chip button {
+            background: #ffffff;
+            border: none;
+            color: var(--danger);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            font-weight: 800;
+        }
+        .email-chip button:hover { background: var(--danger-bg); }
+
+        [disabled] { opacity: 0.65; cursor: not-allowed; background: #f8fafc; }
+
+        /* Print styles: professional report layout */
+        @media print {
+            body { padding: 0; background: #fff; }
+            .nav-tabs, #login-screen, .btn, button, #chk-search, #clause-filter, #eval-filter,
+            .brand-navbar button, .status-pill, .item-actions { display: none !important; }
+            .tab-content { display: block !important; }
+            #tab-dash, #tab-plan, #tab-settings, #tab-users { display: none !important; }
+            .card, .item-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; break-inside: avoid; }
+            .brand-navbar { background: #fff !important; color: #000 !important; border: 1px solid #000; }
+            .brand-navbar * { color: #000 !important; }
+        }
     </style>
 </head>
 <body>
@@ -384,6 +476,7 @@
                 <span class="status-pill">🟢 خدمة التدقيق متصلة 24/7</span>
                 <span style="background: rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 10px; font-size: 13px; color: #cbd5e1;">
                     المستخدم: <strong id="user-display" style="color: #ffffff;">عمر - مدير توكيد الجودة</strong>
+                    <span id="role-display" class="role-badge" style="margin-right: 6px;"></span>
                 </span>
                 <button class="btn btn-gold" style="padding: 6px 14px; font-size: 12.5px;" onclick="logout()">🚪 خروج</button>
             </div>
@@ -394,8 +487,8 @@
             <button class="tab-btn active" onclick="switchTab('tab-dash', this)">📊 لوحة المتابعة العامة</button>
             <button class="tab-btn" onclick="switchTab('tab-plan', this)">📅 خطة التدقيق (Audit Plan)</button>
             <button class="tab-btn" onclick="switchTab('tab-chk', this)">📋 الشيك ليست (16 بنداً)</button>
-            <button class="tab-btn" onclick="switchTab('tab-settings', this)">⚙️ إعدادات البريد والأتمتة</button>
-            <button class="tab-btn" onclick="switchTab('tab-users', this)">👥 المستخدمين والصلاحيات</button>
+            <button class="tab-btn" id="tab-btn-settings" onclick="switchTab('tab-settings', this)">⚙️ إعدادات البريد والأتمتة</button>
+            <button class="tab-btn" id="tab-btn-users" onclick="switchTab('tab-users', this)">👥 المستخدمين والصلاحيات</button>
         </div>
 
         <!-- Tab 1: Dashboard -->
@@ -522,7 +615,27 @@
                         <h3 style="font-size: 18px; font-weight: 800;">📋 قائمة التدقيق الداخلي التفصيلية: GBI-LAB-CHK-01</h3>
                         <p style="color: #64748b; font-size: 13.5px;">بنود متطلبات الحيادية والسرية (16 بنداً معتمداً) ISO/IEC 17025:2017</p>
                     </div>
-                    <button class="btn btn-gold" onclick="window.print()">🖨️ طباعة وحفظ التقرير PDF</button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-outline" id="btn-add-item" style="display:none;" onclick="openAddItemForm()">➕ إضافة بند جديد</button>
+                        <button class="btn" style="background: linear-gradient(135deg, #059669, #047857);" onclick="exportToExcel()">📊 تصدير Excel</button>
+                        <button class="btn btn-gold" onclick="exportToPDF()">📄 تصدير تقرير PDF</button>
+                        <button class="btn" onclick="window.print()">🖨️ طباعة</button>
+                    </div>
+                </div>
+
+                <!-- Add Item Form (admin only) -->
+                <div id="add-item-form" class="card" style="display:none; border: 1.5px dashed var(--primary); margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 15px;">➕ إضافة بند تدقيق جديد</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="input-group" style="margin-bottom:0;"><label>البند القياسي (Clause)</label><input type="text" id="new-item-clause" placeholder="مثال: 4.1.6"></div>
+                        <div class="input-group" style="margin-bottom:0;"><label>المرجع الوثائقي</label><input type="text" id="new-item-ref" placeholder="مثال: GBI-POL-05"></div>
+                    </div>
+                    <div class="input-group"><label>نص السؤال التدقيقي</label><input type="text" id="new-item-q" placeholder="اكتب سؤال التدقيق..."></div>
+                    <div class="input-group"><label>الدليل الموضوعي وطريقة التحقق</label><input type="text" id="new-item-ev" placeholder="اكتب طريقة التحقق..."></div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn" onclick="addChecklistItem()">✅ حفظ البند</button>
+                        <button class="btn btn-outline" onclick="closeAddItemForm()">إلغاء</button>
+                    </div>
                 </div>
 
                 <!-- Filters -->
@@ -559,17 +672,50 @@
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                     <div class="input-group">
-                        <label>بريد إرسال التنبيهات</label>
-                        <input type="text" value="quality@gbi-goldlab.com" placeholder="email@domain.com">
+                        <label>بريد إرسال التنبيهات (يمكن إضافة أكثر من بريد)</label>
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                            <input type="text" id="new-sender-email" placeholder="email@domain.com" onkeydown="if(event.key==='Enter'){event.preventDefault(); addEmail('sender');}">
+                            <button class="btn btn-outline" style="padding: 0 18px; white-space: nowrap;" onclick="addEmail('sender')">➕ إضافة</button>
+                        </div>
+                        <div id="sender-email-list" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
                     </div>
                     <div class="input-group">
-                        <label>بريد استقبال الإشعارات</label>
-                        <input type="text" value="management@gbi-goldlab.com" placeholder="admin@domain.com">
+                        <label>بريد استقبال الإشعارات (يمكن إضافة عدة بريد لإشعار الفريق بالكامل)</label>
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                            <input type="text" id="new-receiver-email" placeholder="email@domain.com" onkeydown="if(event.key==='Enter'){event.preventDefault(); addEmail('receiver');}">
+                            <button class="btn btn-outline" style="padding: 0 18px; white-space: nowrap;" onclick="addEmail('receiver')">➕ إضافة</button>
+                        </div>
+                        <div id="receiver-email-list" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
                     </div>
                 </div>
                 <div style="background: #eff6ff; border-right: 4px solid var(--primary); padding: 16px; border-radius: 8px; font-size: 13.5px; color: #1e40af;">
                     <strong>🕒 دورة الأتمتة:</strong> يرسل النظام إشعار فوري عند التقديم، وتنبيه أصفر قبل الموعد بـ 3 أيام، وتنبيه أحمر يومي في حال التأخر عن موعد الأوديت.
                 </div>
+            </div>
+
+            <!-- Audit Trail Log -->
+            <div class="card">
+                <div style="display:flex; justify-content: space-between; align-items:center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                    <div>
+                        <h3 style="font-size: 18px; font-weight: 800;">🧾 سجل التدقيق (Audit Trail)</h3>
+                        <p style="color: #64748b; font-size: 13.5px;">تتبع كامل لكل تعديل يطرأ على بنود الشيك ليست مع اسم المستخدم والتوقيت</p>
+                    </div>
+                    <button class="btn-danger-outline" style="border-radius:10px;" onclick="clearAuditLog()">🗑️ مسح السجل</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th>التوقيت</th>
+                                <th>المستخدم</th>
+                                <th>الإجراء</th>
+                                <th>التفاصيل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-log-body"></tbody>
+                    </table>
+                </div>
+                <p id="audit-log-empty" style="color:#94a3b8; font-size:13px; text-align:center; padding: 20px; display:none;">لا توجد أي تعديلات مسجلة حتى الآن.</p>
             </div>
         </div>
 
@@ -641,59 +787,161 @@ const checklistData = [
 
 let currentItems = JSON.parse(localStorage.getItem('gbi_checklist_data')) || checklistData;
 
-function performLogin() {
+// ===================================================================
+// RBAC: المستخدمون والمصادقة (كلمات المرور مخزّنة كبصمات SHA-256،
+// ولا يوجد أي تجاوز لتسجيل الدخول - يجب تطابق اسم المستخدم والبصمة تماماً)
+// ===================================================================
+const USERS = [
+    { username: 'omar',     passwordHash: 'd17f25ecfbcc7857f7bebea469308be0b2580943e96d13a3ad98a13675c4bfc2', displayName: 'عمر - مدير توكيد الجودة', role: 'quality_manager', roleLabel: 'مدير جودة' },
+    { username: 'auditor',  passwordHash: '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', displayName: 'أحمد - مدقق جودة داخلي',   role: 'auditor',         roleLabel: 'مدقق' },
+    { username: 'reviewer', passwordHash: '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', displayName: 'سارة - مراجع جودة معتمد',   role: 'reviewer',        roleLabel: 'مراجع' }
+];
+
+let currentUser = null;
+let currentRole = null;
+
+async function sha256(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// دالة تنقية النصوص قبل إدراجها كـ HTML لمنع ثغرات XSS
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[ch]));
+}
+
+async function performLogin() {
     const u = document.getElementById('login-username').value.trim();
     const p = document.getElementById('login-password').value.trim();
-    if ((u === 'omar' && p === '11111') || (u === 'auditor' && p === '12345') || (u === 'reviewer' && p === '12345') || u) {
+    if (!u || !p) { alert('خطأ: اسم المستخدم أو كلمة المرور غير صحيحة.'); return; }
+
+    const hash = await sha256(p);
+    const user = USERS.find(x => x.username === u && x.passwordHash === hash);
+
+    if (user) {
+        currentUser = user.username;
+        currentRole = user.role;
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
-        document.getElementById('user-display').innerText = u === 'omar' ? 'عمر - مدير توكيد الجودة' : (u === 'auditor' ? 'أحمد - مدقق جودة داخلي' : 'سارة - مراجع جودة معتمد');
+        document.getElementById('user-display').innerText = user.displayName;
+        const roleEl = document.getElementById('role-display');
+        roleEl.innerText = user.roleLabel;
+        roleEl.className = 'role-badge role-' + user.role;
+        applyRoleRestrictions();
         renderChecklist();
         updateDashboard();
+        logAudit('تسجيل دخول', '-', '-', '-');
     } else {
         alert('خطأ: اسم المستخدم أو كلمة المرور غير صحيحة.');
     }
 }
 
 function logout() {
+    if (currentUser) logAudit('تسجيل خروج', '-', '-', '-');
+    currentUser = null;
+    currentRole = null;
     document.getElementById('main-app').style.display = 'none';
     document.getElementById('login-screen').style.display = 'block';
 }
 
+// تطبيق صلاحيات الدور (RBAC) بعد تسجيل الدخول:
+// مدير الجودة: صلاحية كاملة (إعدادات، مستخدمون، سجل تدقيق، إضافة/حذف بنود)
+// المدقق: يعدّل نتائج التقييم والملاحظات وحقول عدم المطابقة فقط
+// المراجع: عرض فقط (كل الحقول معطّلة)
+function applyRoleRestrictions() {
+    const isManager = currentRole === 'quality_manager';
+
+    document.getElementById('tab-btn-settings').style.display = isManager ? '' : 'none';
+    document.getElementById('tab-btn-users').style.display = isManager ? '' : 'none';
+    if (!isManager) {
+        document.getElementById('tab-settings').style.display = 'none';
+        document.getElementById('tab-users').style.display = 'none';
+    }
+
+    document.getElementById('btn-add-item').style.display = isManager ? '' : 'none';
+    if (!isManager) closeAddItemForm();
+
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-dash').style.display = 'block';
+    document.querySelector('.tab-btn').classList.add('active');
+}
+
 function switchTab(tabId, btn) {
+    if ((tabId === 'tab-settings' || tabId === 'tab-users') && currentRole !== 'quality_manager') {
+        alert('⛔ هذا القسم متاح لمدير الجودة فقط.');
+        return;
+    }
     document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).style.display = 'block';
     btn.classList.add('active');
     if (tabId === 'tab-dash') updateDashboard();
+    if (tabId === 'tab-settings') renderAuditLog();
 }
 
 function renderChecklist(itemsToRender = currentItems) {
     const container = document.getElementById('checklist-items-container');
     container.innerHTML = '';
+    const readOnly = currentRole === 'reviewer';
+    const isManager = currentRole === 'quality_manager';
+
+    if (itemsToRender.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">لا توجد بنود مطابقة لبحثك.</p>';
+        return;
+    }
 
     itemsToRender.forEach(item => {
         const div = document.createElement('div');
         div.className = 'item-card';
+
+        const ncBlock = item.eval === 'NC' ? `
+            <div class="nc-extra">
+                <div>
+                    <label>🛠️ الإجراء التصحيحي المطلوب</label>
+                    <input type="text" value="${escapeHtml(item.correctiveAction || '')}" ${readOnly ? 'disabled' : ''} placeholder="صف الإجراء التصحيحي..."
+                        onfocus="this.dataset.old=this.value" oninput="updateItemField(${item.id}, 'correctiveAction', this.value)"
+                        onblur="logFieldChange(${item.id}, 'الإجراء التصحيحي', this.dataset.old, this.value)">
+                </div>
+                <div>
+                    <label>📅 الموعد المستهدف للإغلاق</label>
+                    <input type="date" value="${escapeHtml(item.closureDate || '')}" ${readOnly ? 'disabled' : ''}
+                        onfocus="this.dataset.old=this.value" onchange="updateItemField(${item.id}, 'closureDate', this.value); logFieldChange(${item.id}, 'موعد الإغلاق', this.dataset.old, this.value)">
+                </div>
+                <div>
+                    <label>👤 المسؤول عن المتابعة</label>
+                    <input type="text" value="${escapeHtml(item.responsible || '')}" ${readOnly ? 'disabled' : ''} placeholder="اسم المسؤول..."
+                        onfocus="this.dataset.old=this.value" oninput="updateItemField(${item.id}, 'responsible', this.value)"
+                        onblur="logFieldChange(${item.id}, 'المسؤول عن المتابعة', this.dataset.old, this.value)">
+                </div>
+            </div>` : '';
+
+        const adminActions = isManager ? `
+            <div class="item-actions" style="display:flex; gap:8px; margin-top:12px;">
+                <button class="btn-danger-outline" style="border-radius:8px;" onclick="deleteChecklistItem(${item.id})">🗑️ حذف البند</button>
+            </div>` : '';
+
         div.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 12px;">
                 <span style="font-weight: 800; color: #0f172a; font-size: 15.5px;">
-                    <strong style="color: var(--primary);">بند ${item.clause}</strong> | السؤال رقم (${item.id})
+                    <strong style="color: var(--primary);">بند ${escapeHtml(item.clause)}</strong> | السؤال رقم (${item.id})
                 </span>
                 <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 12.5px; color: #475569; font-weight: 600;">
-                    المرجع: ${item.ref}
+                    المرجع: ${escapeHtml(item.ref)}
                 </span>
             </div>
             <div style="font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.8; margin-bottom: 12px;">
-                ${item.q}
+                ${escapeHtml(item.q)}
             </div>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 13.5px; color: #334155; margin-bottom: 14px;">
-                <strong style="color: var(--primary);">🔍 الدليل الموضوعي وطريقة التحقق:</strong><br>${item.ev}
+                <strong style="color: var(--primary);">🔍 الدليل الموضوعي وطريقة التحقق:</strong><br>${escapeHtml(item.ev)}
             </div>
             <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px;">
                 <div>
                     <label style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 4px;">نتيجة التقييم</label>
-                    <select onchange="updateItemEval(${item.id}, this.value)">
+                    <select ${readOnly ? 'disabled' : ''} onchange="updateItemEval(${item.id}, this.value)">
                         <option value="C" ${item.eval === 'C' ? 'selected' : ''}>✅ مطابق (C)</option>
                         <option value="NC" ${item.eval === 'NC' ? 'selected' : ''}>❌ غير مطابق (NC)</option>
                         <option value="OFI" ${item.eval === 'OFI' ? 'selected' : ''}>💡 فرصة تحسين (OFI)</option>
@@ -702,9 +950,13 @@ function renderChecklist(itemsToRender = currentItems) {
                 </div>
                 <div>
                     <label style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 4px;">الملاحظات وتوصيف الدليل المفحوص</label>
-                    <input type="text" value="${item.notes}" placeholder="سجل رقم الوثيقة أو محضر المقابلة المفحوص..." oninput="updateItemNotes(${item.id}, this.value)">
+                    <input type="text" value="${escapeHtml(item.notes)}" ${readOnly ? 'disabled' : ''} placeholder="سجل رقم الوثيقة أو محضر المقابلة المفحوص..."
+                        onfocus="this.dataset.old=this.value" oninput="updateItemNotes(${item.id}, this.value)"
+                        onblur="logFieldChange(${item.id}, 'الملاحظات', this.dataset.old, this.value)">
                 </div>
             </div>
+            ${ncBlock}
+            ${adminActions}
         `;
         container.appendChild(div);
     });
@@ -713,9 +965,12 @@ function renderChecklist(itemsToRender = currentItems) {
 function updateItemEval(id, val) {
     const item = currentItems.find(x => x.id === id);
     if (item) {
+        const oldVal = item.eval;
         item.eval = val;
         localStorage.setItem('gbi_checklist_data', JSON.stringify(currentItems));
         updateDashboard();
+        if (oldVal !== val) logAudit('تعديل نتيجة التقييم', `بند ${item.clause} (#${id})`, oldVal, val);
+        filterChecklist();
     }
 }
 
@@ -725,6 +980,178 @@ function updateItemNotes(id, val) {
         item.notes = val;
         localStorage.setItem('gbi_checklist_data', JSON.stringify(currentItems));
     }
+}
+
+// تحديث حقول عدم المطابقة الإضافية (الإجراء التصحيحي / موعد الإغلاق / المسؤول)
+function updateItemField(id, field, val) {
+    const item = currentItems.find(x => x.id === id);
+    if (item) {
+        item[field] = val;
+        localStorage.setItem('gbi_checklist_data', JSON.stringify(currentItems));
+    }
+}
+
+// تسجيل تغييرات الحقول النصية في سجل التدقيق (عند فقدان التركيز، لا عند كل حرف)
+function logFieldChange(id, label, oldVal, newVal) {
+    oldVal = oldVal || ''; newVal = newVal || '';
+    if (oldVal === newVal) return;
+    const item = currentItems.find(x => x.id === id);
+    logAudit('تعديل ' + label, item ? `بند ${item.clause} (#${id})` : ('#' + id), oldVal || '(فارغ)', newVal || '(فارغ)');
+}
+
+// ===================================================================
+// إدارة بنود الشيك ليست (إضافة / حذف) - مدير الجودة فقط
+// ===================================================================
+function openAddItemForm() {
+    if (currentRole !== 'quality_manager') return;
+    document.getElementById('add-item-form').style.display = 'block';
+}
+
+function closeAddItemForm() {
+    document.getElementById('add-item-form').style.display = 'none';
+    ['new-item-clause', 'new-item-ref', 'new-item-q', 'new-item-ev'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+}
+
+function addChecklistItem() {
+    if (currentRole !== 'quality_manager') return;
+    const clause = document.getElementById('new-item-clause').value.trim();
+    const ref = document.getElementById('new-item-ref').value.trim();
+    const q = document.getElementById('new-item-q').value.trim();
+    const ev = document.getElementById('new-item-ev').value.trim();
+
+    if (!clause || !q) {
+        alert('يرجى تعبئة البند القياسي ونص السؤال على الأقل.');
+        return;
+    }
+
+    const newId = currentItems.length ? Math.max(...currentItems.map(x => x.id)) + 1 : 1;
+    currentItems.push({ id: newId, clause, q, ref, ev, eval: 'Pending', notes: '' });
+    localStorage.setItem('gbi_checklist_data', JSON.stringify(currentItems));
+    logAudit('إضافة بند جديد', `بند ${clause} (#${newId})`, '-', q);
+    closeAddItemForm();
+    filterChecklist();
+    updateDashboard();
+}
+
+function deleteChecklistItem(id) {
+    if (currentRole !== 'quality_manager') return;
+    const item = currentItems.find(x => x.id === id);
+    if (!item) return;
+    if (!confirm(`هل أنت متأكد من حذف البند "${item.clause}"؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+
+    currentItems = currentItems.filter(x => x.id !== id);
+    localStorage.setItem('gbi_checklist_data', JSON.stringify(currentItems));
+    logAudit('حذف بند', `بند ${item.clause} (#${id})`, item.q, '-');
+    filterChecklist();
+    updateDashboard();
+}
+
+// ===================================================================
+// سجل التدقيق (Audit Trail)
+// ===================================================================
+function logAudit(action, target, oldVal, newVal) {
+    const log = JSON.parse(localStorage.getItem('gbi_audit_log') || '[]');
+    log.unshift({
+        ts: new Date().toLocaleString('ar-EG'),
+        user: currentUser || '-',
+        action, target,
+        oldVal: oldVal ?? '-', newVal: newVal ?? '-'
+    });
+    if (log.length > 300) log.length = 300;
+    localStorage.setItem('gbi_audit_log', JSON.stringify(log));
+    renderAuditLog();
+}
+
+function renderAuditLog() {
+    const body = document.getElementById('audit-log-body');
+    const emptyMsg = document.getElementById('audit-log-empty');
+    if (!body) return;
+    const log = JSON.parse(localStorage.getItem('gbi_audit_log') || '[]');
+
+    if (log.length === 0) {
+        body.innerHTML = '';
+        if (emptyMsg) emptyMsg.style.display = 'block';
+        return;
+    }
+    if (emptyMsg) emptyMsg.style.display = 'none';
+
+    body.innerHTML = log.slice(0, 150).map(e => `
+        <tr>
+            <td style="white-space:nowrap;">${escapeHtml(e.ts)}</td>
+            <td>${escapeHtml(e.user)}</td>
+            <td>${escapeHtml(e.action)}</td>
+            <td>${escapeHtml(e.target)}${(e.oldVal !== '-' || e.newVal !== '-') ? ` (<span style="color:#dc2626">${escapeHtml(e.oldVal)}</span> ← <span style="color:#059669">${escapeHtml(e.newVal)}</span>)` : ''}</td>
+        </tr>
+    `).join('');
+}
+
+function clearAuditLog() {
+    if (currentRole !== 'quality_manager') return;
+    if (!confirm('هل تريد مسح سجل التدقيق بالكامل؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    localStorage.removeItem('gbi_audit_log');
+    renderAuditLog();
+}
+
+// ===================================================================
+// التصدير: Excel (SheetJS) و PDF منسّق (jsPDF + AutoTable)
+// ===================================================================
+function exportToExcel() {
+    const rows = currentItems.map(item => ({
+        'البند القياسي': item.clause,
+        'رقم السؤال': item.id,
+        'السؤال': item.q,
+        'المرجع': item.ref,
+        'الدليل الموضوعي': item.ev,
+        'نتيجة التقييم': item.eval,
+        'الملاحظات': item.notes,
+        'الإجراء التصحيحي': item.correctiveAction || '',
+        'موعد الإغلاق': item.closureDate || '',
+        'المسؤول عن المتابعة': item.responsible || ''
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{ wch: 12 }, { wch: 8 }, { wch: 45 }, { wch: 20 }, { wch: 45 }, { wch: 14 }, { wch: 35 }, { wch: 35 }, { wch: 14 }, { wch: 20 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'الشيك ليست');
+    XLSX.writeFile(wb, `GBI-LAB-CHK-01_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    logAudit('تصدير Excel', 'كافة بنود الشيك ليست', '-', currentItems.length + ' بند');
+}
+
+// ملاحظة هامة: خطوط jsPDF الافتراضية لا تدعم تشكيل الحروف العربية بشكل كامل؛
+// لذلك يُستخدم هنا ترويسة إنجليزية لضمان ظهور التقرير بشكل سليم في كل القارئات.
+// لإخراج PDF عربي الشكل بالكامل يلزم تضمين خط عربي (مثل Amiri) داخل الكود.
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape' });
+
+    doc.setFontSize(14);
+    doc.text('GBI Gold Lab - Internal Audit Checklist Report (ISO/IEC 17025:2017, Clause 4)', 14, 15);
+    doc.setFontSize(9);
+    doc.text('Generated: ' + new Date().toLocaleString(), 14, 21);
+
+    const c = currentItems.filter(i => i.eval === 'C').length;
+    const nc = currentItems.filter(i => i.eval === 'NC').length;
+    const ofi = currentItems.filter(i => i.eval === 'OFI').length;
+    doc.text(`Conforming: ${c}   Non-Conformities: ${nc}   OFI: ${ofi}   Total items: ${currentItems.length}`, 14, 27);
+
+    const body = currentItems.map(item => [
+        item.clause, item.id, item.q, item.ref, item.eval, item.notes,
+        item.eval === 'NC' ? (item.correctiveAction || '') : ''
+    ]);
+
+    doc.autoTable({
+        startY: 33,
+        head: [['Clause', '#', 'Question (AR)', 'Reference', 'Result', 'Notes (AR)', 'Corrective Action (AR)']],
+        body,
+        styles: { fontSize: 7.5, cellWidth: 'wrap', overflow: 'linebreak' },
+        headStyles: { fillColor: [11, 19, 43] },
+        columnStyles: { 2: { cellWidth: 65 }, 5: { cellWidth: 45 }, 6: { cellWidth: 45 } }
+    });
+
+    doc.save(`GBI-LAB-CHK-01_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    logAudit('تصدير PDF', 'تقرير كامل', '-', currentItems.length + ' بند');
 }
 
 function filterChecklist() {
@@ -779,14 +1206,63 @@ function updateDashboard() {
     document.getElementById('stats-42').innerText = `${c42} / ${t42}`;
 }
 
+// ===================================================================
+// إعدادات البريد الإلكتروني: قوائم متعددة لبريد الإرسال وبريد الاستقبال
+// ===================================================================
+let emailSettings = JSON.parse(localStorage.getItem('gbi_email_settings')) || {
+    sender: ['quality@gbi-goldlab.com'],
+    receiver: ['management@gbi-goldlab.com']
+};
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function renderEmailList(type) {
+    const container = document.getElementById(type + '-email-list');
+    if (!container) return;
+    if (emailSettings[type].length === 0) {
+        container.innerHTML = '<span style="color:#94a3b8; font-size:13px;">لا يوجد بريد مضاف بعد.</span>';
+        return;
+    }
+    container.innerHTML = emailSettings[type].map((email, idx) => `
+        <span class="email-chip">
+            ${escapeHtml(email)}
+            <button type="button" onclick="removeEmail('${type}', ${idx})" title="حذف">×</button>
+        </span>
+    `).join('');
+}
+
+function addEmail(type) {
+    const input = document.getElementById('new-' + type + '-email');
+    const email = input.value.trim();
+    if (!email) return;
+    if (!isValidEmail(email)) { alert('يرجى إدخال بريد إلكتروني صحيح.'); return; }
+    if (emailSettings[type].includes(email)) { alert('هذا البريد مضاف بالفعل في هذه القائمة.'); input.value = ''; return; }
+    emailSettings[type].push(email);
+    localStorage.setItem('gbi_email_settings', JSON.stringify(emailSettings));
+    input.value = '';
+    renderEmailList(type);
+}
+
+function removeEmail(type, idx) {
+    emailSettings[type].splice(idx, 1);
+    localStorage.setItem('gbi_email_settings', JSON.stringify(emailSettings));
+    renderEmailList(type);
+}
+
 function saveChecklist() {
     localStorage.setItem('gbi_checklist_data', JSON.stringify(currentItems));
+    logAudit('حفظ واعتماد', 'كافة بنود الشيك ليست', '-', '-');
     alert('✅ تم حفظ كافة بيانات الشيك ليست بنجاح في النظام!');
 }
 
 // Initial setup
 renderChecklist();
 updateDashboard();
+renderAuditLog();
+renderEmailList('sender');
+renderEmailList('receiver');
 </script>
 
 </body>
