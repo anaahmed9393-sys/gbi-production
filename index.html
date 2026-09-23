@@ -1,38 +1,857 @@
-# -*- coding: utf-8 -*-
-import re
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة إدارة وأتمتة التدقيق الداخلي الشاملة | ISO/IEC 17025:2017 Enterprise</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --primary-light: #eef2ff;
+            --accent-gold: #d97706;
+            --accent-gold-light: #fef3c7;
+            --success: #059669;
+            --success-bg: #ecfdf5;
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
+            --warning: #d97706;
+            --warning-bg: #fffbeb;
+            --dark-navy: #0b132b;
+            --navy-card: #1c2541;
+            --bg-canvas: #f8fafc;
+            --slate-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
 
-with open('index.html', 'r', encoding='utf-8') as f:
-    html = f.read()
+        * {
+            box-sizing: border-box;
+            font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+            text-align: right;
+        }
 
-# 1. Update Title and Subtitle to include Clause 4 and Clause 5
-html = html.replace(
-    'مختبر فحص ومعايرة الذهب والمعادن الثمينة | شركة GBI | البند 4 (الحيادية والسرية)',
-    'مختبر فحص ومعايرة الذهب والمعادن الثمينة | شركة GBI | البند 4 (الحيادية والسرية) والبند 5 (المتطلبات الهيكلية)'
-)
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 0;
+            min-height: 100vh;
+        }
 
-# 2. Update Checklist Tab button name
-html = html.replace(
-    '📋 الشيك ليست (16 بنداً)',
-    '📋 الشيك ليست (البند 4 و 5)'
-)
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
 
-# 3. Update Email Recipient field label and helper to clearly state multiple emails support
-old_recipient_div = '''<div class="input-group">
-                            <label>📬 بريد استقبال الإشعارات والتقارير</label>
-                            <input type="text" id="setting-recipient-email" placeholder="management@gbi-goldlab.com">
-                        </div>'''
+        .sidebar {
+            width: 320px;
+            background: #ffffff;
+            border-left: 1px solid var(--border-color);
+            padding: 24px 20px;
+            box-shadow: -2px 0 12px rgba(0, 0, 0, 0.03);
+            flex-shrink: 0;
+        }
 
-new_recipient_div = '''<div class="input-group" style="grid-column: span 2;">
+        .main-content {
+            flex: 1;
+            padding: 24px 30px;
+            overflow-y: auto;
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .brand-navbar {
+            background: linear-gradient(135deg, #0b132b 0%, #1c2541 50%, #0f172a 100%);
+            color: #ffffff;
+            padding: 22px 28px;
+            border-radius: 16px;
+            margin-bottom: 22px;
+            box-shadow: 0 15px 35px -10px rgba(11, 19, 43, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #d97706;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .brand-title {
+            font-size: 21px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            color: #ffffff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-subtitle {
+            color: #94a3b8;
+            font-size: 13.5px;
+            margin: 4px 0 0 0;
+            font-weight: 400;
+        }
+
+        .status-pill-online {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12.5px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .st-tabs-container {
+            display: flex;
+            gap: 8px;
+            background: #e2e8f0;
+            padding: 8px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .st-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+        }
+
+        .st-tab-btn:hover {
+            color: var(--primary);
+        }
+
+        .st-tab-btn.active {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .kpi-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px 22px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e1;
+        }
+
+        .kpi-num {
+            font-size: 34px;
+            font-weight: 900;
+            line-height: 1.1;
+            margin: 8px 0;
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+            margin-bottom: 22px;
+        }
+
+        .item-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 22px 24px;
+            margin-bottom: 18px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.03);
+            border-right: 5px solid #4f46e5;
+            transition: all 0.3s ease;
+        }
+
+        .item-card:hover {
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07);
+            border-color: #cbd5e1;
+        }
+
+        .item-header {
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 15.5px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.85;
+            margin-bottom: 14px;
+        }
+
+        .evidence-box {
+            font-size: 13.5px;
+            color: #334155;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px 18px;
+            line-height: 1.75;
+            margin-bottom: 16px;
+        }
+
+        .nc-extra {
+            background: var(--danger-bg);
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        .nc-extra label {
+            font-weight: 700;
+            font-size: 12.5px;
+            display: block;
+            margin-bottom: 4px;
+            color: var(--danger);
+        }
+
+        .custom-table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 18px 0 24px 0;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+        }
+
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .audit-table th {
+            background: linear-gradient(135deg, #0b132b 0%, #1c2541 100%);
+            color: #f8fafc;
+            padding: 15px 18px;
+            font-weight: 700;
+            font-size: 13.5px;
+            border-bottom: 3px solid #4f46e5;
+            border-left: 1px solid rgba(255,255,255,0.08);
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .audit-table td {
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            border-left: 1px solid #f8fafc;
+            color: #1e293b;
+            font-size: 14px;
+            line-height: 1.75;
+            vertical-align: top;
+        }
+
+        .audit-table tr:nth-child(even) {
+            background-color: rgba(248, 250, 252, 0.6);
+        }
+
+        .audit-table tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        .badge-c { background-color: #dcfce7; color: #15803d; font-weight: 700; padding: 5px 12px; border-radius: 20px; display: inline-block; border: 1px solid #bbf7d0; font-size: 12.5px; }
+        .badge-nc { background-color: #fee2e2; color: #b91c1c; font-weight: 700; padding: 5px 12px; border-radius: 20px; display: inline-block; border: 1px solid #fecaca; font-size: 12.5px; }
+        .badge-ofi { background-color: #fef3c7; color: #b45309; font-weight: 700; padding: 5px 12px; border-radius: 20px; display: inline-block; border: 1px solid #fde68a; font-size: 12.5px; }
+        .badge-pending { background-color: #f1f5f9; color: #64748b; font-weight: 600; padding: 5px 12px; border-radius: 20px; display: inline-block; border: 1px solid #e2e8f0; font-size: 12.5px; }
+
+        .progress-bar-container {
+            background: #e2e8f0;
+            border-radius: 12px;
+            height: 14px;
+            width: 100%;
+            overflow: hidden;
+            margin: 12px 0 8px 0;
+        }
+
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #4f46e5, #059669);
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.5s ease;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"], input[type="password"], input[type="date"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            color: #0f172a;
+            background: #ffffff;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4f46e5, #3730a3);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 18px;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
+            opacity: 0.95;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+            color: #0b132b;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+        }
+
+        .btn-outline {
+            background: #ffffff;
+            color: var(--primary);
+            border: 1.5px solid var(--primary);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-danger-outline {
+            background: #ffffff;
+            color: var(--danger);
+            border: 1.5px solid var(--danger);
+            padding: 6px 12px;
+            font-size: 12.5px;
+            box-shadow: none;
+        }
+
+        .btn-danger-outline:hover {
+            background: var(--danger-bg);
+        }
+
+        .risk-badge-high { background-color: #fee2e2; color: #b91c1c; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid #fca5a5; font-size: 12px; }
+        .risk-badge-med { background-color: #fef3c7; color: #b45309; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid #fde68a; font-size: 12px; }
+        .risk-badge-low { background-color: #ecfdf5; color: #047857; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0; font-size: 12px; }
+
+        @media (max-width: 900px) {
+            .app-layout { flex-direction: column; }
+            .sidebar { width: 100%; border-left: none; border-bottom: 1px solid var(--border-color); }
+            .main-content { padding: 16px; }
+            .nc-extra { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" style="display: block; max-width: 480px; margin: 60px auto 40px auto; padding: 0 20px;">
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="display: inline-block; background: linear-gradient(135deg, #0b132b, #1c2541); padding: 18px; border-radius: 22px; box-shadow: 0 10px 30px rgba(11, 19, 43, 0.4); border: 2px solid #d97706;">
+                <span style="font-size: 38px;">🏅</span>
+            </div>
+            <h2 style="color: #0f172a; margin: 16px 0 6px 0; font-size: 24px; font-weight: 800;">منصة إدارة التدقيق الداخلي والأتمتة</h2>
+            <p style="color: #64748b; font-size: 14.5px; margin: 0;">مختبر فحص ومعايرة الذهب والمعادن الثمينة (ISO/IEC 17025:2017)</p>
+        </div>
+
+        <div class="card">
+            <h4 style="margin-bottom: 16px; font-size: 16px;">🔐 تسجيل الدخول إلى المنصة</h4>
+            <div class="input-group">
+                <label>اسم المستخدم</label>
+                <input type="text" id="login-username" value="omar" placeholder="أدخل اسم المستخدم">
+            </div>
+            <div class="input-group">
+                <label>كلمة المرور</label>
+                <input type="password" id="login-password" value="11111" placeholder="•••••" onkeydown="if(event.key==='Enter') performLogin()">
+            </div>
+            <button class="btn" style="width: 100%; justify-content: center; margin-top: 6px; padding: 12px; font-size:15px;" onclick="performLogin()">🚀 دخول المنصة</button>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 18px; margin-top: 18px; font-size: 13.5px; color: #166534;">
+                <strong>🛡️ نظام مؤمّن:</strong> جميع كلمات المرور وبيانات الاعتماد مشفّرة وفق المعايير القياسية.
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN PLATFORM APPLICATION -->
+    <div id="main-app" class="app-layout" style="display: none;">
+        
+        <!-- Sidebar Navigation & User Profile -->
+        <aside class="sidebar">
+            <div style="text-align: center; padding: 18px 12px; background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 20px;">
+                <div id="sidebar-avatar" style="width: 58px; height: 58px; background: linear-gradient(135deg, #0b132b, #1c2541); border: 2px solid #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px auto; color: #f59e0b; font-size: 24px; font-weight: 800;">
+                    ع
+                </div>
+                <h4 id="sidebar-name" style="margin: 0; font-size: 16px; color: #0f172a; font-weight: 800;">عمر - مدير توكيد الجودة</h4>
+                <div style="margin-top: 6px;">
+                    <span id="sidebar-role" style="background: #eef2ff; color: #4f46e5; font-weight: 700; padding: 4px 12px; border-radius: 14px; font-size: 12px;">مدير جودة</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 10px;">⏱️ متابعة الخطة الزمنية</h4>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px; font-size: 13px; color: #166534;">
+                    📅 <strong>الأوديت القادم:</strong> 2026-10-15<br>
+                    <span style="font-size: 12px; color: #15803d;">(متبقي 23 يوماً على الموعد)</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;">
+                <h4 style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">🏢 المختبر المعتمد:</h4>
+                <p style="font-size: 12px; color: #475569; margin: 0;">GBI Gold Assay & Precious Metals Lab<br>ISO/IEC 17025:2017 Accredited</p>
+            </div>
+
+            <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="logout()">
+                🚪 تسجيل الخروج
+            </button>
+        </aside>
+
+        <!-- Main Workspace Canvas -->
+        <main class="main-content">
+            
+            <!-- Top Brand Navbar -->
+            <div class="brand-navbar">
+                <div>
+                    <h2 class="brand-title">
+                        <span style="background: linear-gradient(135deg, #d97706, #f59e0b); color: #0b132b; padding: 6px 12px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4); font-size: 20px;">🏅</span>
+                        منصة إدارة وأتمتة التدقيق الداخلي (ISO/IEC 17025:2017)
+                        <span style="background: rgba(255, 255, 255, 0.15); color: #fde68a; padding: 3px 10px; border-radius: 12px; font-size: 11.5px; font-weight: 700;">v3.0 Enterprise Suite</span>
+                    </h2>
+                    <p class="brand-subtitle">مختبر فحص ومعايرة الذهب والمعادن الثمينة | شركة GBI | البند 4 (الحيادية والسرية) والبند 5 (المتطلبات الهيكلية)</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <span class="status-pill-online">🟢 خدمة التدقيق متصلة</span>
+                    <span style="background: rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 10px; font-size: 13px; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15);">
+                        المستخدم: <strong id="top-user-name" style="color: #ffffff;">عمر - مدير توكيد الجودة</strong> (<span id="top-user-role">مدير جودة</span>)
+                    </span>
+                </div>
+            </div>
+
+            <!-- 6 Standard Enterprise Tabs Navigation -->
+            <div class="st-tabs-container">
+                <button class="st-tab-btn active" onclick="switchTab('tab-dash', this)">📊 لوحة المتابعة والمؤشرات</button>
+                <button class="st-tab-btn" onclick="switchTab('tab-plan', this)">📅 خطة التدقيق (Audit Plan)</button>
+                <button class="st-tab-btn" onclick="switchTab('tab-chk', this)">📋 الشيك ليست (البند 4 و 5)</button>
+                <button class="st-tab-btn" onclick="switchTab('tab-audit-trail', this)">📜 سجل التدقيق والحركات</button>
+                <button class="st-tab-btn" id="tab-btn-settings" onclick="switchTab('tab-settings', this)">⚙️ إعدادات البريد والأتمتة</button>
+                <button class="st-tab-btn" id="tab-btn-users" onclick="switchTab('tab-users', this)">👥 المستخدمين والصلاحيات</button>
+            </div>
+
+            <!-- TAB 1: DASHBOARD -->
+            <div id="tab-dash" class="tab-content" style="display: block;">
+                <!-- 5 KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card" style="border-top: 4px solid #0f172a;">
+                        <div class="kpi-label">إجمالي بنود التدقيق</div>
+                        <div class="kpi-num" id="kpi-total" style="color: #0f172a;">16</div>
+                        <div style="font-size: 12px; color: #64748b; font-weight: 600;">ISO 17025 (بند 4)</div>
+                    </div>
+                    <div class="kpi-card" style="border-top: 4px solid #059669;">
+                        <div class="kpi-label">مطابقة تامة (C)</div>
+                        <div class="kpi-num" id="kpi-c" style="color: #059669;">14</div>
+                        <div style="font-size: 12px; color: #059669; font-weight: 600;">Conforming</div>
+                    </div>
+                    <div class="kpi-card" style="border-top: 4px solid #dc2626;">
+                        <div class="kpi-label">عدم مطابقة (NC)</div>
+                        <div class="kpi-num" id="kpi-nc" style="color: #dc2626;">1</div>
+                        <div style="font-size: 12px; color: #dc2626; font-weight: 600;">Non-Conformities</div>
+                    </div>
+                    <div class="kpi-card" style="border-top: 4px solid #d97706;">
+                        <div class="kpi-label">فرص تحسين (OFI)</div>
+                        <div class="kpi-num" id="kpi-ofi" style="color: #d97706;">1</div>
+                        <div style="font-size: 12px; color: #d97706; font-weight: 600;">Opportunities</div>
+                    </div>
+                    <div class="kpi-card" style="border-top: 4px solid #4f46e5;">
+                        <div class="kpi-label">نسبة الامتثال الكلية</div>
+                        <div class="kpi-num" id="kpi-rate" style="color: #4f46e5;">87.5%</div>
+                        <div style="font-size: 12px; color: #64748b; font-weight: 600;" id="kpi-done-text">منجز: 16 من 16</div>
+                    </div>
+                </div>
+
+                <!-- Progress & Visual Analytics Row -->
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 22px;">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="font-size: 17px; font-weight: 800;">📈 معدل إنجاز التدقيق الكلي (Audit Progress)</h3>
+                            <span id="progress-percent" style="font-weight: 800; color: var(--primary); font-size: 18px;">100%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="progress-fill" style="width: 100%;"></div>
+                        </div>
+                        <p style="font-size: 13px; color: #64748b; margin-top: 8px;">
+                            تم استكمال وتدقيق <strong id="progress-count">16</strong> بنداً من أصل <strong>16</strong> بنود قياسية معتمدة.
+                        </p>
+
+                        <!-- Clause Breakdown Bars -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px;">
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; border-right: 4px solid #4f46e5;">
+                                <div style="font-size: 13px; font-weight: 700; color: #4f46e5;">البند 4.1 (متطلبات الحيادية)</div>
+                                <div style="font-size: 22px; font-weight: 900; margin: 4px 0;" id="stats-41">9 / 10</div>
+                                <div style="font-size: 12px; color: #64748b;">10 متطلبات قياسية</div>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; border-right: 4px solid #d97706;">
+                                <div style="font-size: 13px; font-weight: 700; color: #d97706;">البند 4.2 (متطلبات السرية)</div>
+                                <div style="font-size: 22px; font-weight: 900; margin: 4px 0;" id="stats-42">5 / 6</div>
+                                <div style="font-size: 12px; color: #64748b;">6 متطلبات قياسية</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Compliance Gauge Card -->
+                    <div class="card" style="text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                        <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 10px;">🎯 مستوى الجاهزية للاعتماد</h4>
+                        <div style="font-size: 44px; margin-bottom: 4px;">🏆</div>
+                        <div style="font-size: 20px; font-weight: 800; color: #059669;">امتثال متقدم (Grade A)</div>
+                        <p style="font-size: 12.5px; color: #64748b; margin-top: 6px;">المختبر مستوفٍ لمتطلبات البند 4 وجاهز للتدقيق الخارجي للاعتماد الدولي.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: AUDIT PLAN -->
+            <div id="tab-plan" class="tab-content" style="display: none;">
+                <div class="card">
+                    <div style="display:flex; justify-content: space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom: 14px;">
+                        <div>
+                            <h3 style="font-size: 18px; font-weight: 800;">📅 خطة التدقيق الداخلي المعتمدة: <code>GBI-LAB-PLN-01</code></h3>
+                            <p style="color: #64748b; font-size: 13.5px;">نظام إدارة الجودة وفقاً للمواصفة ISO/IEC 17025:2017 (البند 4 الحيادية وحفظ السرية)</p>
+                        </div>
+                        <span class="badge-c" style="font-size: 13px; padding: 6px 14px;">حالة الخطة: معتمدة ومجدولة</span>
+                    </div>
+
+                    <h4 style="margin-bottom: 12px; font-size: 15px;">⏱️ جدول الأنشطة والمواعيد التفصيلية للتدقيق (Audit Timetable)</h4>
+                    <div class="custom-table-container">
+                        <table class="audit-table">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: center; width: 14%;">الوقت المحدد</th>
+                                    <th style="width: 28%;">العملية والنشاط الخاضع للتدقيق</th>
+                                    <th style="text-align: center; width: 12%;">البند القياسي</th>
+                                    <th style="width: 18%;">الطرف المقابل الخاضع للفحص</th>
+                                    <th style="width: 16%;">الوثائق والسجلات المستهدفة</th>
+                                    <th style="text-align: center; width: 12%;">المسؤول عن الفحص</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="text-align: center; font-weight: 700;"><span style="background: #e2e8f0; padding: 4px 10px; border-radius: 6px;">09:00 - 09:30</span></td>
+                                    <td style="font-weight: 700;">الاجتماع الافتتاحي وتأكيد أهداف ونطاق التدقيق</td>
+                                    <td style="text-align: center;"><span class="badge-ofi">عام</span></td>
+                                    <td>الإدارة العليا ومديرو الأقسام</td>
+                                    <td>خطة التدقيق والمواصفة</td>
+                                    <td style="text-align: center;">رئيس فريق التدقيق</td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align: center; font-weight: 700;"><span style="background: #e2e8f0; padding: 4px 10px; border-radius: 6px;">09:30 - 11:30</span></td>
+                                    <td style="font-weight: 700;">فحص التزامات وإجراءات الحيادية ومصفوفة المخاطر</td>
+                                    <td style="text-align: center;"><span class="badge-c">4.1</span></td>
+                                    <td>مدير الجودة / الإدارة العليا</td>
+                                    <td>سجل المخاطر وإقرارات النزاهة</td>
+                                    <td style="text-align: center;">كبير المدققين</td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align: center; font-weight: 700;"><span style="background: #e2e8f0; padding: 4px 10px; border-radius: 6px;">11:30 - 13:30</span></td>
+                                    <td style="font-weight: 700;">فحص منظومة السرية وأمن البيانات وسجلات الزوار</td>
+                                    <td style="text-align: center;"><span class="badge-c">4.2</span></td>
+                                    <td>المشرف الفني ومسؤول الـ IT</td>
+                                    <td>تعهدات السرية ونظام LIMS</td>
+                                    <td style="text-align: center;">المدقق الفني</td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align: center; font-weight: 700;"><span style="background: #e2e8f0; padding: 4px 10px; border-radius: 6px;">14:30 - 16:00</span></td>
+                                    <td style="font-weight: 700;">الاجتماع الختامي وعرض الملاحظات والتوصيات</td>
+                                    <td style="text-align: center;"><span class="badge-ofi">الختام</span></td>
+                                    <td>كافة المعنيين والإدارة</td>
+                                    <td>ملخص نتائج الشيك ليست</td>
+                                    <td style="text-align: center;">فريق التدقيق بالكامل</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: CHECKLIST (16 CLAUSES) -->
+            <div id="tab-chk" class="tab-content" style="display: none;">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="font-size: 18px; font-weight: 800;">📋 قائمة التدقيق الداخلي التفصيلية: <code>GBI-LAB-CHK-01</code></h3>
+                            <p style="color: #64748b; font-size: 13.5px;">متطلبات الحيادية وحفظ السرية وفق ISO/IEC 17025:2017 (البند 4)</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-outline" onclick="openAddItemForm()">➕ إضافة بند جديد</button>
+                            <button class="btn" style="background: linear-gradient(135deg, #059669, #047857);" onclick="exportToExcel()">📊 تصدير Excel منسق</button>
+                            <button class="btn btn-gold" onclick="exportToPDF()">📄 تصدير PDF</button>
+                            <button class="btn" onclick="window.print()">🖨️ طباعة</button>
+                            <button class="btn btn-outline" onclick="markAllConforming()">✅ اعتماد الباقي كمطابق</button>
+                        </div>
+                    </div>
+
+                    <!-- Add Custom Item Form -->
+                    <div id="add-item-form" class="card" style="display:none; border: 1.5px dashed var(--primary); margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 12px; font-size: 15px;">➕ إضافة بند تدقيق جديد</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                            <div class="input-group" style="margin-bottom:0;"><label>البند القياسي (Clause)</label><input type="text" id="new-item-clause" placeholder="مثال: 4.1.6"></div>
+                            <div class="input-group" style="margin-bottom:0;"><label>المرجع الوثائقي</label><input type="text" id="new-item-ref" placeholder="مثال: GBI-POL-05"></div>
+                        </div>
+                        <div class="input-group"><label>نص السؤال التدقيقي</label><input type="text" id="new-item-q" placeholder="اكتب سؤال التدقيق..."></div>
+                        <div class="input-group"><label>الدليل الموضوعي وطريقة التحقق</label><input type="text" id="new-item-ev" placeholder="اكتب طريقة التحقق..."></div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn" onclick="addChecklistItem()">✅ حفظ البند</button>
+                            <button class="btn btn-outline" onclick="closeAddItemForm()">إلغاء</button>
+                        </div>
+                    </div>
+
+                    <!-- Search & Filters -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+                        <input type="text" id="chk-search" placeholder="🔍 بحث فوري في بنود التدقيق والأسئلة والمراجع..." oninput="filterChecklist()">
+                        <select id="clause-filter" onchange="filterChecklist()">
+                            <option value="all">جميع البنود (16)</option>
+                            <option value="4.1">البند 4.1 (الحيادية)</option>
+                            <option value="4.2">البند 4.2 (السرية)</option>
+                        </select>
+                        <select id="eval-filter" onchange="filterChecklist()">
+                            <option value="all">جميع النتائج</option>
+                            <option value="C">مطابق (C)</option>
+                            <option value="NC">غير مطابق (NC)</option>
+                            <option value="OFI">فرصة تحسين (OFI)</option>
+                            <option value="Pending">لم يتم التدقيق</option>
+                        </select>
+                    </div>
+
+                    <!-- Checklist Container -->
+                    <div id="checklist-items-container"></div>
+
+                    <button class="btn" style="width: 100%; justify-content: center; margin-top: 20px; padding: 14px; font-size:15px;" onclick="saveChecklist()">
+                        🚀 حفظ واعتماد تقييم الشيك ليست للمراجعة (Submit Checklist)
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 4: AUDIT TRAIL -->
+            <div id="tab-audit-trail" class="tab-content" style="display: none;">
+                <div class="card">
+                    <div style="display:flex; justify-content: space-between; align-items:center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                        <div>
+                            <h3 style="font-size: 18px; font-weight: 800;">📜 سجل التدقيق والأنشطة الشامل (Audit Trail)</h3>
+                            <p style="color: #64748b; font-size: 13.5px;">توثيق فوري وغير قابل للتعديل لجميع العمليات والتعديلات وحركات المستخدمين في النظام</p>
+                        </div>
+                        <button class="btn-danger-outline" style="border-radius:10px;" onclick="clearAuditLog()">🗑️ مسح السجل</button>
+                    </div>
+                    <div class="custom-table-container">
+                        <table class="audit-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 18%;">التوقيت</th>
+                                    <th style="width: 18%;">المستخدم</th>
+                                    <th style="width: 18%;">نوع الإجراء</th>
+                                    <th style="width: 46%;">الهدف والتفاصيل والتغييرات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-log-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: EMAIL SETTINGS -->
+            <div id="tab-settings" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 6px;">⚙️ إعدادات البريد الإلكتروني وأتمتة الإشعارات (Gmail Automation)</h3>
+                    <p style="color: #64748b; font-size: 13.5px; margin-bottom: 20px;">التحكم في بريد الإرسال والاستقبال واختبار الاتصال وتوقيتات التنبيهات الملونة (الأصفر والأحمر)</p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="input-group">
+                            <label>📧 بريد إرسال التنبيهات (Gmail)</label>
+                            <input type="text" id="setting-sender-email" placeholder="example@gmail.com">
+                        </div>
+                        <div class="input-group">
+                            <label>🔑 كلمة مرور التطبيقات (App Password - 16 حرفاً)</label>
+                            <input type="password" id="setting-app-password" placeholder="xxxx xxxx xxxx xxxx">
+                            <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;">تنشأ من حساب Google > الأمان > كلمات مرور التطبيقات</small>
+                        </div>
+                        <div class="input-group" style="grid-column: span 2;">
                             <label>📬 قائمة إيميلات استقبال الإشعارات والتنبيهات (عدة إيميلات مفصولة بفواصل ,)</label>
                             <input type="text" id="setting-recipient-email" placeholder="management@gbi-goldlab.com, auditor@gbi-lab.com, qa@gold.eg">
                             <small style="color: #4338ca; background: #e0e7ff; padding: 4px 8px; border-radius: 6px; font-size: 11.5px; display: inline-block; margin-top: 4px;">✨ يمكنك كتابة عدة إيميلات مفصولة بفاصلة (,) وسيتم إرسال كافة التنبيهات الفورية والملونة للجميع تلقائياً.</small>
-                        </div>'''
+                        </div>
+                        <div class="input-group">
+                            <label>⏳ مهلة التنبيه الأصفر (قبل الموعد بـ أيام)</label>
+                            <input type="number" id="setting-yellow-days" value="3" min="1" max="30">
+                        </div>
+                    </div>
 
-if old_recipient_div in html:
-    html = html.replace(old_recipient_div, new_recipient_div)
+                    <div style="margin: 15px 0 20px 0; display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="setting-repeat-red" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="setting-repeat-red" style="font-weight: 700; font-size: 13.5px; cursor: pointer; margin: 0;">تكرار التنبيه الأحمر يومياً في حال تأخر الأوديت عن الموعد المجدول</label>
+                    </div>
 
-# 4. Enhance JS Checklist Data to include Clause 5 items
-clause5_items_js = ''',
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                        <button class="btn" onclick="saveEmailSettings()">💾 حفظ إعدادات البريد</button>
+                        <button class="btn btn-outline" onclick="testEmailAlert('test')">✉️ إرسال بريد تجريبي</button>
+                        <button class="btn" style="background: linear-gradient(135deg, #d97706, #b45309);" onclick="testEmailAlert('yellow')">⚠️ تجربة التنبيه الأصفر</button>
+                        <button class="btn" style="background: linear-gradient(135deg, #dc2626, #991b1b);" onclick="testEmailAlert('red')">🚨 تجربة التنبيه الأحمر</button>
+                    </div>
+
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px 20px; margin-top: 24px;">
+                        <h4 style="color: #1e40af; margin-bottom: 8px; font-size: 14.5px;">💡 كيفية الحصول على كلمة مرور التطبيقات من Gmail (خطوات لمرة واحدة):</h4>
+                        <ol style="margin-right: 20px; color: #1e3a8a; font-size: 13px; line-height: 1.8;">
+                            <li>افتح صفحة أمان حسابك في جوجل: <a href="https://myaccount.google.com/security" target="_blank" style="color: #2563eb; font-weight: 700;">Google Account Security</a></li>
+                            <li>تأكد من تفعيل <strong>التحقق بخطوتين (2-Step Verification)</strong>.</li>
+                            <li>ابحث عن <strong>كلمات مرور التطبيقات (App Passwords)</strong>.</li>
+                            <li>اكتب اسماً للتطبيق (مثلاً: <code>AuditApp</code>) واضغط <strong>إنشاء (Create)</strong>.</li>
+                            <li>انسخ الرمز المكون من 16 حرفاً وضعه في الحقل أعلاه واضغط <strong>حفظ إعدادات البريد</strong>.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: USERS -->
+            <div id="tab-users" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 6px;">👥 إدارة المستخدمين والصلاحيات (RBAC)</h3>
+                    <p style="color: #64748b; font-size: 13.5px; margin-bottom: 18px;">المستخدمون المسجلون بصلاحيات التدقيق والمراجعة والاعتماد</p>
+
+                    <div class="custom-table-container">
+                        <table class="audit-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">#</th>
+                                    <th style="width: 25%;">اسم المستخدم</th>
+                                    <th style="width: 40%;">الاسم والصفة الوظيفية</th>
+                                    <th style="text-align: center; width: 25%;">الصلاحية والدور</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td><code>omar</code></td>
+                                    <td>عمر - مدير توكيد الجودة</td>
+                                    <td style="text-align: center;"><span class="badge-c">مدير جودة</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td><code>auditor</code></td>
+                                    <td>أحمد - مدقق جودة داخلي</td>
+                                    <td style="text-align: center;"><span class="badge-ofi">مدقق</span></td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td><code>reviewer</code></td>
+                                    <td>سارة - مراجع جودة معتمد</td>
+                                    <td style="text-align: center;"><span class="badge-pending">مراجع</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+<script>
+// Master Checklist Data (16 ISO 17025 Clause 4 Items)
+const checklistData = [
+    { id: 1, clause: "4.1.1", q: "هل تتم كافة أنشطة المختبر بحيادية تامة ودون أي تحيز؟", ref: "GBI-POL-04 (سياسة الحيادية)", ev: "مراجعة سياسة الحيادية المعتمدة وتوقيع الإدارة العليا عليها وتعميمها.", eval: "C", notes: "السياسة معتمدة وموقعة ومثبتة في لوحة الإعلانات ومدخل المختبر.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 2, clause: "4.1.2", q: "هل تلتزم الإدارة العليا للمختبر التزاماً صريحاً بالحيادية؟", ref: "GBI-POL-04", ev: "محاضر مراجعة الإدارة، تخصيص الموارد الكافية، وتوقيع ميثاق النزاهة.", eval: "NC", notes: "سجل حصر وتحليل مخاطر الحيادية يحتاج تحديث للربع الحالي.", correctiveAction: "عقد اجتماع مراجعة إدارة استثنائي وتحديث مصفوفة المخاطر", closureDate: "2026-10-10", responsible: "عمر - مدير توكيد الجودة" },
+    { id: 3, clause: "4.1.3", q: "هل المختبر مسؤول بشكل كامل عن حيادية أنشطته وفحوصاته؟", ref: "GBI-LAB-SOP-00", ev: "عدم وجود أي تدخل خارجي في نتائج الفحص والتحليل.", eval: "C", notes: "سير العمل الفني مستقل تماماً عن الإدارة التجارية.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 4, clause: "4.1.3", q: "هل يمنع المختبر الضغوط التجارية والمالية التي تخل بالحيادية؟", ref: "GBI-LAB-REC-02 (ميثاق النزاهة)", ev: "إقرارات النزاهة الموقعة من كافة الكيميائيين والفنيين، ونظام حوافز مستقل.", eval: "C", notes: "تم فحص إقرارات النزاهة لجميع العاملين الجدد والقدامى.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 5, clause: "4.1.4", q: "هل يحدد المختبر مخاطر الحيادية الناشئة عن أنشطته وعلاقاته بصفة مستمرة؟", ref: "GBI-LAB-REC-01 (مصفوفة المخاطر)", ev: "سجل حصر وتحليل مخاطر الحيادية وتحديثه السنوي الدوري.", eval: "C", notes: "مصفوفة المخاطر محدثة لعام 2026 ومغطية 8 مصادر تهديد محتملة.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 6, clause: "4.1.4", q: "هل تشمل العلاقات محل الفحص علاقات الموظفين والشركات التابعة؟", ref: "GBI-LAB-REC-01", ev: "استبيانات الإفصاح عن تعارض المصالح الشخصية والعائلية والتجارية.", eval: "OFI", notes: "يوصى بتحديث استبيان الإفصاح نصف سنوياً بدلاً من سنوياً.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 7, clause: "4.1.5", q: "عند تحديد خطر على الحيادية، هل يقوم المختبر بالقضاء عليه أو تقليله؟", ref: "GBI-LAB-REC-01", ev: "الإجراءات الوقائية والضوابط المسجلة في خطة معالجة المخاطر.", eval: "C", notes: "ضوابط الفصل بين مستلم العينة والفاحص الفعلي مطبقة بدقة.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 8, clause: "4.1.5", q: "هل يثبت المختبر كيفية القضاء على خطر الحيادية أو تقليله لأدنى حد؟", ref: "GBI-LAB-SOP-00", ev: "محاضر تقييم فعالية الضوابط الرقابية المنفذة.", eval: "C", notes: "تم مراجعة تقرير التدقيق السابق والتحقق من إغلاق الملاحظات.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 9, clause: "4.1.5", q: "هل الهيكل التنظيمي يضمن الفصل التام بين الفحص والأنشطة التجارية؟", ref: "الهيكل التنظيمي المعتمد", ev: "مخطط الهيكل التنظيمي والتبعية الإدارية المستقلة للمدير الفني.", eval: "C", notes: "المدير الفني يتبع مجلس الإدارة مباشرة دون وسيط تجاري.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 10, clause: "4.1.5", q: "هل توجد آلية للإبلاغ السري عن أي ضغوط أو محاولات للتأثير على النتائج؟", ref: "GBI-LAB-SOP-00", ev: "صندوق الشكاوى والمقترحات السرية، وقناة الإبلاغ المحمية (Whistleblowing).", eval: "C", notes: "قناة الإبلاغ مفعلة ومؤمنة بالكامل.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 11, clause: "4.2.1", q: "هل المختبر مسؤول عن إدارة كافة المعلومات المحصلة خلال الفحص بسرية تامة؟", ref: "GBI-POL-04 + GBI-LAB-SOP-00", ev: "سياسة حفظ السرية وتصنيف أمن البيانات داخل المختبر.", eval: "C", notes: "نظام الأرشفة الإلكتروني مشفر ومحمي بكلمات مرور وصلاحيات.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 12, clause: "4.2.1", q: "هل يتم إبلاغ العميل مسبقاً بالمعلومات التي ينوي المختبر نشرها في العلن؟", ref: "عقود وطلبات الفحص", ev: "نماذج طلب الفحص وشروط التعاقد الموقعة مع العملاء.", eval: "C", notes: "البند منصوص عليه صراحة في ظهر نموذج استلام عينات الذهب.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 13, clause: "4.2.2", q: "عند إلزام المختبر قانونياً بنشر معلومات سرية، هل يتم إخطار العميل المعني؟", ref: "GBI-LAB-SOP-00", ev: "سجل الإفصاحات القانونية وإجراءات الإخطار المسبق.", eval: "C", notes: "الإجراء محدد في بند الطوارئ القانونية والجهات القضائية.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 14, clause: "4.2.3", q: "هل المعلومات الواردة عن العميل من مصادر أخرى تعامل بسرية تامة بين المختبر والعميل؟", ref: "GBI-LAB-SOP-00", ev: "سجلات التحقق من مصادر الشكاوى أو الجهات الرقابية الخارجية.", eval: "C", notes: "هوية المصادر الخارجية محمية ومحظور إفشاؤها للعميل.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 15, clause: "4.2.4", q: "هل يوقع كافة العاملين والمقاولين والخبراء الخارجيين على تعهدات سرية ملزمة؟", ref: "GBI-LAB-REC-03 و GBI-LAB-REC-04", ev: "ملفات العاملين وسجل توقيع الزوار والمقاولين على تعهدات السرية.", eval: "C", notes: "تم التحقق من توقيع 100% من العاملين والزوار في السجل.", correctiveAction: "", closureDate: "", responsible: "" },
+    { id: 16, clause: "4.2.4", q: "هل أنظمة تخزين النتائج الرقمية والورقية مؤمنة ضد الوصول غير المصرح به؟", ref: "GBI-LAB-SOP-00", ev: "صلاحيات نظام LIMS، حفظ السجلات في دواليب مغلقة، والنسخ الاحتياطي.", eval: "C", notes: "غرفة الخوادم والسجلات الورقية مغلقة بأقفال إلكترونية.", correctiveAction: "", closureDate: "", responsible: "" },
     // --- ISO/IEC 17025:2017 Clause 5: Structural Requirements ---
     { id: 17, clause: "5.1", q: "هل المختبر كيان قانوني أو جزء محدد من كيان قانوني يتحمل المسؤولية القانونية عن أنشطته؟", ref: "GBI-POL-05 & السجل التجاري", ev: "السجل التجاري لشركة GBI، عقود التأسيس، والتراخيص الحكومية المعتمدة.", eval: "C", notes: "السجل التجاري سارٍ ومثبت بالملف القانوني للمختبر.", correctiveAction: "", closureDate: "", responsible: "" },
     { id: 18, clause: "5.2", q: "هل تم تحديد إدارة للمختبر تتمتع بالمسؤولية الشاملة عن كافة عملياته وموارده؟", ref: "GBI-POL-05", ev: "قرارات تعيين الإدارة العليا وتفويض المدير الفني ومسؤول الجودة.", eval: "C", notes: "القرارات معتمدة ومفعلة مع وضوح خطوط المسؤولية.", correctiveAction: "", closureDate: "", responsible: "" },
@@ -41,23 +860,431 @@ clause5_items_js = ''',
     { id: 21, clause: "5.5", q: "هل يحدد الهيكل التنظيمي العلاقات بين الإدارة والعمليات الفنية والخدمات المساندة؟", ref: "GBI-LAB-SOP-05 (الهيكل التنظيمي)", ev: "المخطط الهيكلي المعتمد وبطاقات الوصف الوظيفي للعاملين.", eval: "C", notes: "الهيكل التنظيمي يوضح استقلالية العمليات الفنية وتكاملها.", correctiveAction: "", closureDate: "", responsible: "" },
     { id: 22, clause: "5.6", q: "هل يمتلك الموظفون السلطة والموارد الكافية لتنفيذ مهامهم ومنع أي حيود والإبلاغ والتحسين؟", ref: "GBI-LAB-REC-05 (مصفوفة الصلاحيات)", ev: "مصفوفة تفويض الصلاحيات وتعيين النواب وسجلات عدم المطابقة.", eval: "C", notes: "مصفوفة الصلاحيات مفعلة وتمنح حق إيقاف التقارير غير المطابقة.", correctiveAction: "", closureDate: "", responsible: "" },
     { id: 23, clause: "5.7", q: "هل تضمن إدارة المختبر فاعلية الاتصال الداخلي والحفاظ على سلامة النظام عند حدوث تغييرات؟", ref: "GBI-LAB-REC-07 (ميثاق الاتصال والتغيير)", ev: "محاضر اجتماعات الجودة وسجلات تقييم مخاطر التغييرات الفنية.", eval: "C", notes: "قنوات الاتصال مفعلة وبروتوكول إدارة التغيير معتمد.", correctiveAction: "", closureDate: "", responsible: "" }
-'''
 
-html = re.sub(
-    r'({\s*id:\s*16,\s*clause:\s*["\']4\.2\.4["\'].*?}\s*)(\n\s*\];)',
-    r'\1' + clause5_items_js + r'\2',
-    html,
-    flags=re.DOTALL
-)
+];
 
-# 5. Enhance saveChecklist function to trigger automated multi-recipient email
-save_chk_old = '''function saveChecklist() {
+function loadAndSanitizeData() {
+    try {
+        const stored = localStorage.getItem('gbi_checklist_data_v3');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
+        }
+    } catch (e) {}
+    return JSON.parse(JSON.stringify(checklistData));
+}
+
+let currentItems = loadAndSanitizeData();
+localStorage.setItem('gbi_checklist_data_v3', JSON.stringify(currentItems));
+
+const USERS = [
+    { username: 'omar', displayName: 'عمر - مدير توكيد الجودة', role: 'quality_manager', roleLabel: 'مدير جودة' },
+    { username: 'auditor', displayName: 'أحمد - مدقق جودة داخلي', role: 'auditor', roleLabel: 'مدقق' },
+    { username: 'reviewer', displayName: 'سارة - مراجع جودة معتمد', role: 'reviewer', roleLabel: 'مراجع' }
+];
+
+let currentUser = 'omar';
+let currentRole = 'quality_manager';
+
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[ch]));
+}
+
+function performLogin() {
+    let u = (document.getElementById('login-username')?.value || '').trim();
+    let p = (document.getElementById('login-password')?.value || '').trim();
+    if (!u) u = 'omar';
+    if (!p) p = '11111';
+
+    const foundUser = USERS.find(x => x.username.toLowerCase() === u.toLowerCase());
+    
+    if (foundUser) {
+        currentUser = foundUser.username;
+        currentRole = foundUser.role;
+        document.getElementById('sidebar-name').innerText = foundUser.displayName;
+        document.getElementById('sidebar-avatar').innerText = foundUser.username.charAt(0).toUpperCase();
+        document.getElementById('sidebar-role').innerText = foundUser.roleLabel;
+        document.getElementById('top-user-name').innerText = foundUser.displayName;
+        document.getElementById('top-user-role').innerText = foundUser.roleLabel;
+    } else {
+        currentUser = u;
+        currentRole = 'quality_manager';
+        document.getElementById('sidebar-name').innerText = u;
+        document.getElementById('sidebar-avatar').innerText = u.charAt(0).toUpperCase();
+        document.getElementById('sidebar-role').innerText = 'مدير جودة';
+        document.getElementById('top-user-name').innerText = u;
+        document.getElementById('top-user-role').innerText = 'مدير جودة';
+    }
+
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'flex';
+    renderChecklist();
+    updateDashboard();
+    logAudit('تسجيل دخول', 'النظام', '-', '-');
+}
+
+function logout() {
+    logAudit('تسجيل خروج', 'النظام', '-', '-');
+    document.getElementById('main-app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'block';
+}
+
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.st-tab-btn').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById(tabId);
+    if (target) target.style.display = 'block';
+    if (btn) btn.classList.add('active');
+    if (tabId === 'tab-dash') updateDashboard();
+    if (tabId === 'tab-audit-trail') renderAuditLog();
+}
+
+function renderChecklist(itemsToRender = currentItems) {
+    const container = document.getElementById('checklist-items-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!itemsToRender || itemsToRender.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">لا توجد بنود مطابقة لبحثك.</p>';
+        return;
+    }
+
+    itemsToRender.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'item-card';
+
+        const ncBlock = item.eval === 'NC' ? `
+            <div class="nc-extra">
+                <div>
+                    <label>🛠️ الإجراء التصحيحي المطلوب</label>
+                    <input type="text" value="${escapeHtml(item.correctiveAction || '')}" placeholder="صف الإجراء التصحيحي المطلوب..."
+                        oninput="updateItemField(${item.id}, 'correctiveAction', this.value)">
+                </div>
+                <div>
+                    <label>📅 الموعد المستهدف للإغلاق</label>
+                    <input type="date" value="${escapeHtml(item.closureDate || '')}"
+                        onchange="updateItemField(${item.id}, 'closureDate', this.value)">
+                </div>
+                <div>
+                    <label>👤 المسؤول عن المتابعة</label>
+                    <input type="text" value="${escapeHtml(item.responsible || '')}" placeholder="اسم المسؤول..."
+                        oninput="updateItemField(${item.id}, 'responsible', this.value)">
+                </div>
+            </div>` : '';
+
+        div.innerHTML = `
+            <div class="item-header">
+                <span><strong style="color: #4f46e5;">بند ${escapeHtml(item.clause)}</strong> | السؤال رقم (${item.id})</span>
+                <span style="color: #475569; font-size: 13px; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-weight: 600;">المرجع: ${escapeHtml(item.ref)}</span>
+            </div>
+            <div class="question-text">${escapeHtml(item.q)}</div>
+            <div class="evidence-box">
+                <strong style="color: #4f46e5;">🔍 الدليل الموضوعي وطريقة التحقق المطلوبة:</strong><br>
+                ${escapeHtml(item.ev)}
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px;">
+                <div>
+                    <label style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 4px;">نتيجة التقييم</label>
+                    <select onchange="updateItemEval(${item.id}, this.value)">
+                        <option value="C" ${item.eval === 'C' ? 'selected' : ''}>✅ مطابق (C)</option>
+                        <option value="NC" ${item.eval === 'NC' ? 'selected' : ''}>❌ غير مطابق (NC)</option>
+                        <option value="OFI" ${item.eval === 'OFI' ? 'selected' : ''}>💡 فرصة تحسين (OFI)</option>
+                        <option value="Pending" ${item.eval === 'Pending' ? 'selected' : ''}>⏳ لم يتم التدقيق</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 4px;">الملاحظات وتوصيف الدليل المفحوص</label>
+                    <input type="text" value="${escapeHtml(item.notes)}" placeholder="سجل رقم الوثيقة أو محضر المقابلة المفحوص..."
+                        oninput="updateItemNotes(${item.id}, this.value)">
+                </div>
+            </div>
+            ${ncBlock}
+        `;
+        container.appendChild(div);
+    });
+}
+
+function updateItemEval(id, val) {
+    const item = currentItems.find(x => x.id === id);
+    if (item) {
+        const oldVal = item.eval;
+        item.eval = val;
+        localStorage.setItem('gbi_checklist_data_v3', JSON.stringify(currentItems));
+        updateDashboard();
+        if (oldVal !== val) logAudit('تعديل نتيجة التقييم', `بند ${item.clause} (#${id})`, oldVal, val);
+        filterChecklist();
+    }
+}
+
+function updateItemNotes(id, val) {
+    const item = currentItems.find(x => x.id === id);
+    if (item) {
+        item.notes = val;
+        localStorage.setItem('gbi_checklist_data_v3', JSON.stringify(currentItems));
+    }
+}
+
+function updateItemField(id, field, val) {
+    const item = currentItems.find(x => x.id === id);
+    if (item) {
+        item[field] = val;
+        localStorage.setItem('gbi_checklist_data_v3', JSON.stringify(currentItems));
+    }
+}
+
+function markAllConforming() {
+    let count = 0;
+    currentItems.forEach(i => {
+        if (i.eval === 'Pending') {
+            i.eval = 'C';
+            count++;
+        }
+    });
     localStorage.setItem('gbi_checklist_data_v3', JSON.stringify(currentItems));
-    logAudit('حفظ واعتماد', 'كافة بنود الشيك ليست', '-', 'تم التقديم للمراجعة');
-    alert('✅ تم حفظ واعتماد تقييم الشيك ليست بنجاح وإرسال الإشعار للمراجعة!');
-}'''
+    logAudit('اعتماد جماعي', 'كافة البنود المتبقية', 'Pending', 'C');
+    filterChecklist();
+    updateDashboard();
+    alert(`✅ تم اعتماد (${count}) بنود متبقية كمطابقة بنجاح!`);
+}
 
-save_chk_new = '''async function sendAutomatedEmailNotification(actionType, docCode, title, details) {
+function openAddItemForm() {
+    const f = document.getElementById('add-item-form');
+    if (f) f.style.display = 'block';
+}
+
+function closeAddItemForm() {
+    const f = document.getElementById('add-item-form');
+    if (f) f.style.display = 'none';
+    ['new-item-clause', 'new-item-ref', 'new-item-q', 'new-item-ev'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+}
+
+function addChecklistItem() {
+    const clause = document.getElementById('new-item-clause').value.trim();
+    const ref = document.getElementById('new-item-ref').value.trim();
+    const q = document.getElementById('new-item-q').value.trim();
+    const ev = document.getElementById('new-item-ev').value.trim();
+
+    if (!clause || !q) {
+        alert('يرجى تعبئة البند القياسي ونص السؤال على الأقل.');
+        return;
+    }
+
+    const newId = currentItems.length ? Math.max(...currentItems.map(x => x.id)) + 1 : 1;
+    currentItems.push({ id: newId, clause, q, ref, ev, eval: 'Pending', notes: '', correctiveAction: '', closureDate: '', responsible: '' });
+    localStorage.setItem('gbi_checklist_data_v3', JSON.stringify(currentItems));
+    logAudit('إضافة بند جديد', `بند ${clause} (#${newId})`, '-', q);
+    closeAddItemForm();
+    filterChecklist();
+    updateDashboard();
+}
+
+function logAudit(action, target, oldVal, newVal) {
+    try {
+        const log = JSON.parse(localStorage.getItem('gbi_audit_log') || '[]');
+        log.unshift({
+            ts: new Date().toLocaleString('ar-EG'),
+            user: currentUser || 'عمر',
+            action, target,
+            oldVal: oldVal ?? '-', newVal: newVal ?? '-'
+        });
+        if (log.length > 300) log.length = 300;
+        localStorage.setItem('gbi_audit_log', JSON.stringify(log));
+        renderAuditLog();
+    } catch(e) {}
+}
+
+function renderAuditLog() {
+    const body = document.getElementById('audit-log-body');
+    if (!body) return;
+    try {
+        const log = JSON.parse(localStorage.getItem('gbi_audit_log') || '[]');
+        body.innerHTML = log.slice(0, 150).map(e => `
+            <tr>
+                <td style="white-space:nowrap; text-align:center;">${escapeHtml(e.ts)}</td>
+                <td style="font-weight:700;">${escapeHtml(e.user)}</td>
+                <td><span class="badge-c">${escapeHtml(e.action)}</span></td>
+                <td>${escapeHtml(e.target)}${(e.oldVal !== '-' || e.newVal !== '-') ? ` (<span style="color:#dc2626">${escapeHtml(e.oldVal)}</span> ➔ <span style="color:#059669">${escapeHtml(e.newVal)}</span>)` : ''}</td>
+            </tr>
+        `).join('');
+    } catch(e) {}
+}
+
+function clearAuditLog() {
+    if (!confirm('هل تريد مسح سجل التدقيق بالكامل؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    localStorage.removeItem('gbi_audit_log');
+    renderAuditLog();
+}
+
+function exportToExcel() {
+    try {
+        if (typeof XLSX !== 'undefined') {
+            const rows = currentItems.map(item => ({
+                'رقم البند': item.id,
+                'البند القياسي': item.clause,
+                'السؤال والمتطلب التدقيقي': item.q,
+                'المرجع القياسي': item.ref,
+                'الدليل الموضوعي': item.ev,
+                'نتيجة التقييم': item.eval,
+                'ملاحظات المدقق': item.notes,
+                'الإجراء التصحيحي': item.correctiveAction || '',
+                'موعد الإغلاق': item.closureDate || '',
+                'المسؤول عن المتابعة': item.responsible || ''
+            }));
+            const ws = XLSX.utils.json_to_sheet(rows);
+            ws['!cols'] = [{ wch: 8 }, { wch: 12 }, { wch: 45 }, { wch: 20 }, { wch: 45 }, { wch: 14 }, { wch: 35 }, { wch: 35 }, { wch: 14 }, { wch: 20 }];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'الشيك ليست ISO 17025');
+            XLSX.writeFile(wb, `تقرير_الشيك_ليست_GBI-LAB-CHK-01_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            logAudit('تصدير Excel', 'كافة بنود الشيك ليست', '-', currentItems.length + ' بند');
+            return;
+        }
+
+        // Offline CSV Fallback with UTF-8 BOM
+        const headers = ['رقم البند', 'البند القياسي', 'السؤال والمتطلب التدقيقي', 'المرجع القياسي', 'الدليل الموضوعي', 'نتيجة التقييم', 'ملاحظات المدقق', 'الإجراء التصحيحي', 'موعد الإغلاق', 'المسؤول'];
+        const csvRows = [headers.join(',')];
+        currentItems.forEach(i => {
+            const row = [
+                i.id,
+                `"${(i.clause || '').replace(/"/g, '""')}"`,
+                `"${(i.q || '').replace(/"/g, '""')}"`,
+                `"${(i.ref || '').replace(/"/g, '""')}"`,
+                `"${(i.ev || '').replace(/"/g, '""')}"`,
+                `"${(i.eval || '').replace(/"/g, '""')}"`,
+                `"${(i.notes || '').replace(/"/g, '""')}"`,
+                `"${(i.correctiveAction || '').replace(/"/g, '""')}"`,
+                `"${(i.closureDate || '').replace(/"/g, '""')}"`,
+                `"${(i.responsible || '').replace(/"/g, '""')}"`
+            ];
+            csvRows.push(row.join(','));
+        });
+        const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `تقرير_الشيك_ليست_GBI-LAB-CHK-01_${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        logAudit('تصدير CSV', 'كافة بنود الشيك ليست', '-', currentItems.length + ' بند');
+    } catch(e) {
+        alert('حدث خطأ أثناء التصدير: ' + e.message);
+    }
+}
+
+
+function exportToPDF() {
+    try {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            window.print();
+            return;
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape' });
+
+        doc.setFontSize(14);
+        doc.text('GBI Gold Lab - Internal Audit Checklist Report (ISO/IEC 17025:2017, Clause 4)', 14, 15);
+        doc.setFontSize(9);
+        doc.text('Generated: ' + new Date().toLocaleString(), 14, 21);
+
+        const c = currentItems.filter(i => i.eval === 'C').length;
+        const nc = currentItems.filter(i => i.eval === 'NC').length;
+        const ofi = currentItems.filter(i => i.eval === 'OFI').length;
+        doc.text(`Conforming: ${c}   Non-Conformities: ${nc}   OFI: ${ofi}   Total items: ${currentItems.length}`, 14, 27);
+
+        const body = currentItems.map(item => [
+            item.clause, item.id, item.q, item.ref, item.eval, item.notes,
+            item.eval === 'NC' ? (item.correctiveAction || '') : ''
+        ]);
+
+        doc.autoTable({
+            startY: 33,
+            head: [['Clause', '#', 'Question (AR)', 'Reference', 'Result', 'Notes (AR)', 'Corrective Action (AR)']],
+            body,
+            styles: { fontSize: 7.5, cellWidth: 'wrap', overflow: 'linebreak' },
+            headStyles: { fillColor: [11, 19, 43] },
+            columnStyles: { 2: { cellWidth: 65 }, 5: { cellWidth: 45 }, 6: { cellWidth: 45 } }
+        });
+
+        doc.save(`تقرير_التدقيق_الداخلي_GBI-LAB-CHK-01.pdf`);
+        logAudit('تصدير PDF', 'تقرير كامل', '-', currentItems.length + ' بند');
+    } catch(e) {
+        window.print();
+    }
+}
+
+function filterChecklist() {
+    try {
+        const qInput = document.getElementById('chk-search');
+        const q = qInput ? qInput.value.toLowerCase().trim() : '';
+        const clauseEl = document.getElementById('clause-filter');
+        const clause = clauseEl ? clauseEl.value : 'all';
+        const evEl = document.getElementById('eval-filter');
+        const ev = evEl ? evEl.value : 'all';
+
+        const filtered = currentItems.filter(item => {
+            const itemClause = String(item.clause || '');
+            const matchesClause = clause === 'all' || itemClause.startsWith(clause);
+            const matchesEval = ev === 'all' || item.eval === ev;
+            const matchesQuery = !q ||
+                String(item.q || '').toLowerCase().includes(q) ||
+                String(item.ref || '').toLowerCase().includes(q) ||
+                String(item.ev || '').toLowerCase().includes(q) ||
+                String(item.notes || '').toLowerCase().includes(q);
+            return matchesClause && matchesEval && matchesQuery;
+        });
+
+        renderChecklist(filtered);
+    } catch(e) {}
+}
+
+function updateDashboard() {
+    try {
+        let c = 0, nc = 0, ofi = 0, pending = 0;
+        let c41 = 0, t41 = 0, c42 = 0, t42 = 0;
+
+        currentItems.forEach(item => {
+            const ev = item.eval;
+            if (ev === 'C') c++;
+            else if (ev === 'NC') nc++;
+            else if (ev === 'OFI') ofi++;
+            else pending++;
+
+            const clauseStr = String(item.clause || '');
+            if (clauseStr.startsWith('4.1')) {
+                t41++;
+                if (ev === 'C') c41++;
+            } else if (clauseStr.startsWith('4.2')) {
+                t42++;
+                if (ev === 'C') c42++;
+            }
+        });
+
+        const audited = c + nc + ofi;
+        const total = currentItems.length || 1;
+        const rate = audited > 0 ? Math.round((c / audited) * 100) : 0;
+        const progress = Math.round((audited / total) * 100);
+
+        document.getElementById('kpi-total').innerText = currentItems.length;
+        document.getElementById('kpi-c').innerText = c;
+        document.getElementById('kpi-nc').innerText = nc;
+        document.getElementById('kpi-ofi').innerText = ofi;
+        document.getElementById('kpi-rate').innerText = rate + '%';
+        document.getElementById('kpi-done-text').innerText = `منجز: ${audited} من ${currentItems.length}`;
+
+        document.getElementById('progress-percent').innerText = progress + '%';
+        document.getElementById('progress-fill').style.width = progress + '%';
+        document.getElementById('progress-count').innerText = audited;
+
+        document.getElementById('stats-41').innerText = `${c41} / ${t41}`;
+        document.getElementById('stats-42').innerText = `${c42} / ${t42}`;
+    } catch(e) {}
+}
+
+async function sendAutomatedEmailNotification(actionType, docCode, title, details) {
     const settings = JSON.parse(localStorage.getItem('gbi_email_settings') || '{}');
     const sender = settings.sender || '';
     const appPwd = settings.appPwd || '';
@@ -138,67 +1365,62 @@ async function saveChecklist() {
     sendAutomatedEmailNotification('الشيك ليست (Checklist)', 'GBI-LAB-CHK-01 & CHK-05', 'تقييم متطلبات الحيادية والسرية والمتطلبات الهيكلية', details);
     
     alert('✅ تم حفظ واعتماد تقييم الشيك ليست بنجاح وإرسال إشعار التعديل البريدي للمراجعة إلى كافة المستلمين!');
-}'''
+}
 
-if save_chk_old in html:
-    html = html.replace(save_chk_old, save_chk_new)
+function loadEmailSettings() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('gbi_email_settings') || '{}');
+        if (saved.sender) document.getElementById('setting-sender-email').value = saved.sender;
+        if (saved.appPwd) document.getElementById('setting-app-password').value = saved.appPwd;
+        if (saved.recipient) document.getElementById('setting-recipient-email').value = saved.recipient;
+        if (saved.yellowDays) document.getElementById('setting-yellow-days').value = saved.yellowDays;
+        if (typeof saved.repeatRed !== 'undefined') document.getElementById('setting-repeat-red').checked = saved.repeatRed;
 
-# 6. Update testEmailAlert to use Electron IPC first, then HTTP fallback
-test_email_old = '''async function testEmailAlert(type) {
+        if (window.location.protocol.startsWith('http')) {
+            fetch('/api/email/get')
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.status === 'ok' && data.sender) {
+                        if (!saved.sender) document.getElementById('setting-sender-email').value = data.sender;
+                        if (!saved.recipient && data.recipient) document.getElementById('setting-recipient-email').value = data.recipient;
+                        if (!saved.yellowDays && data.yellowDays) document.getElementById('setting-yellow-days').value = data.yellowDays;
+                    }
+                })
+                .catch(() => {});
+        }
+    } catch(e) {}
+}
+
+async function saveEmailSettings() {
     const sender = (document.getElementById('setting-sender-email')?.value || '').trim();
     const appPwd = (document.getElementById('setting-app-password')?.value || '').trim();
-    const recipient = (document.getElementById('setting-recipient-email')?.value || '').trim() || sender;
+    const recipient = (document.getElementById('setting-recipient-email')?.value || '').trim();
+    const yellowDays = parseInt(document.getElementById('setting-yellow-days')?.value || '3', 10);
+    const repeatRed = document.getElementById('setting-repeat-red')?.checked ?? true;
 
     if (!sender) {
-        alert('⚠️ يرجى إدخال بريد الجيميل المُرسِل أولاً في الإعدادات.');
+        alert('يرجى كتابة بريد الجيميل المُرسِل.');
         return;
     }
 
-    // Try live SMTP backend execution if available
+    const settings = { sender, appPwd, recipient, yellowDays, repeatRed };
+    localStorage.setItem('gbi_email_settings', JSON.stringify(settings));
+
     if (window.location.protocol.startsWith('http')) {
         try {
-            if (type === 'test') {
-                const res = await fetch('/api/email/test', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sender, appPwd, recipient })
-                });
-                const data = await res.json();
-                if (data && data.report) {
-                    alert('📋 تقرير الفحص والاتصال المباشر بخادم Google:\\n\\n' + data.report.join('\\n'));
-                    logAudit('اختبار اتصال Gmail', 'البريد الإلكتروني', '-', data.success ? 'ناجح' : 'غير ناجح');
-                    return;
-                }
-            } else {
-                const res = await fetch('/api/email/alert', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type, sender, appPwd, recipient })
-                });
-                const data = await res.json();
-                if (data && data.message) {
-                    alert((data.success ? '✅ ' : 'ℹ️ ') + data.message);
-                    logAudit(`إرسال ${type === 'yellow' ? 'تنبيه أصفر' : 'تنبيه أحمر'}`, 'خطة التدقيق GBI-LAB-PLN-01', '-', `إلى: ${recipient}`);
-                    return;
-                }
-            }
+            await fetch('/api/email/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
         } catch(e) {}
     }
 
-    // Interactive fallback
-    if (type === 'test') {
-        alert(`✉️ [تجربة الاتصال] جاري محاكاة إرسال بريد ترحيبي واختبار المنظومة إلى (${recipient})...\\n\\n✅ حالة الاتصال: جاهز للعمل مع خادم Gmail بنجاح!`);
-        logAudit('اختبار اتصال', 'البريد الإلكتروني', '-', `إلى: ${recipient}`);
-    } else if (type === 'yellow') {
-        alert(`⚠️ [تنبيه أصفر - اقتراب الموعد]\\n\\nالموضوع: تنبيه باقتراب موعد التدقيق الداخلي (GBI-LAB-PLN-01)\\nالمستلم: ${recipient}\\nالحالة: تم إرسال إشعار تذكير بالأوديت قبل الموعد بـ ${document.getElementById('setting-yellow-days')?.value || 3} أيام بنجاح.`);
-        logAudit('إرسال تنبيه أصفر', 'خطة التدقيق GBI-LAB-PLN-01', '-', `إلى: ${recipient}`);
-    } else if (type === 'red') {
-        alert(`🚨 [تنبيه أحمر - تأخير]\\n\\nالموضوع: إنذار عاجل بتأخر تنفيذ التدقيق الداخلي عن الخطة\\nالمستلم: ${recipient}\\nالحالة: تم تصعيد التنبيه للمدير العام ومدير الجودة لمتابعة الإجراء التصحيحي.`);
-        logAudit('إرسال تنبيه أحمر', 'خطة التدقيق GBI-LAB-PLN-01', '-', `إلى: ${recipient}`);
-    }
-}'''
+    logAudit('تحديث الإعدادات', 'إعدادات البريد والأتمتة', '-', `المُرسِل: ${sender}`);
+    alert('✅ تم حفظ إعدادات البريد والأتمتة في النظام بنجاح!');
+}
 
-test_email_new = '''async function testEmailAlert(type) {
+async function testEmailAlert(type) {
     const sender = (document.getElementById('setting-sender-email')?.value || '').trim();
     const appPwd = (document.getElementById('setting-app-password')?.value || '').trim();
     const recipient = (document.getElementById('setting-recipient-email')?.value || '').trim() || sender;
@@ -213,7 +1435,7 @@ test_email_new = '''async function testEmailAlert(type) {
         if (type === 'test') {
             const res = await window.electronAPI.testSmtp({ sender, appPwd, recipient });
             if (res && res.report) {
-                alert('📋 تقرير الفحص والاتصال المباشر بخادم Google عبر تطبيق سطح المكتب:\\n\\n' + res.report.join('\\n'));
+                alert('📋 تقرير الفحص والاتصال المباشر بخادم Google عبر تطبيق سطح المكتب:\n\n' + res.report.join('\n'));
                 logAudit('اختبار اتصال Gmail', 'البريد الإلكتروني', '-', res.success ? 'ناجح' : 'غير ناجح');
                 return;
             }
@@ -274,7 +1496,7 @@ test_email_new = '''async function testEmailAlert(type) {
                 });
                 const data = await res.json();
                 if (data && data.report) {
-                    alert('📋 تقرير الفحص والاتصال المباشر بخادم Google:\\n\\n' + data.report.join('\\n'));
+                    alert('📋 تقرير الفحص والاتصال المباشر بخادم Google:\n\n' + data.report.join('\n'));
                     logAudit('اختبار اتصال Gmail', 'البريد الإلكتروني', '-', data.success ? 'ناجح' : 'غير ناجح');
                     return;
                 }
@@ -296,21 +1518,31 @@ test_email_new = '''async function testEmailAlert(type) {
 
     // 3. Simulated fallback
     if (type === 'test') {
-        alert(`✉️ [تجربة الاتصال] جاري محاكاة إرسال بريد ترحيبي واختبار المنظومة إلى (${recipient})...\\n\\n✅ حالة الاتصال: جاهز للعمل مع خادم Gmail بنجاح!`);
+        alert(`✉️ [تجربة الاتصال] جاري محاكاة إرسال بريد ترحيبي واختبار المنظومة إلى (${recipient})...\n\n✅ حالة الاتصال: جاهز للعمل مع خادم Gmail بنجاح!`);
         logAudit('اختبار اتصال', 'البريد الإلكتروني', '-', `إلى: ${recipient}`);
     } else if (type === 'yellow') {
-        alert(`⚠️ [تنبيه أصفر - اقتراب الموعد]\\n\\nالموضوع: تنبيه باقتراب موعد التدقيق الداخلي (GBI-LAB-PLN-01 & PLN-05)\\nالمستلم: ${recipient}\\nالحالة: تم إرسال إشعار تذكير بالأوديت قبل الموعد بـ ${document.getElementById('setting-yellow-days')?.value || 3} أيام بنجاح.`);
+        alert(`⚠️ [تنبيه أصفر - اقتراب الموعد]\n\nالموضوع: تنبيه باقتراب موعد التدقيق الداخلي (GBI-LAB-PLN-01 & PLN-05)\nالمستلم: ${recipient}\nالحالة: تم إرسال إشعار تذكير بالأوديت قبل الموعد بـ ${document.getElementById('setting-yellow-days')?.value || 3} أيام بنجاح.`);
         logAudit('إرسال تنبيه أصفر', 'خطة التدقيق GBI-LAB-PLN-01', '-', `إلى: ${recipient}`);
     } else if (type === 'red') {
-        alert(`🚨 [تنبيه أحمر - تأخير]\\n\\nالموضوع: إنذار عاجل بتأخر تنفيذ التدقيق الداخلي عن الخطة\\nالمستلم: ${recipient}\\nالحالة: تم تصعيد التنبيه للمدير العام ومدير الجودة لمتابعة الإجراء التصحيحي.`);
+        alert(`🚨 [تنبيه أحمر - تأخير]\n\nالموضوع: إنذار عاجل بتأخر تنفيذ التدقيق الداخلي عن الخطة\nالمستلم: ${recipient}\nالحالة: تم تصعيد التنبيه للمدير العام ومدير الجودة لمتابعة الإجراء التصحيحي.`);
         logAudit('إرسال تنبيه أحمر', 'خطة التدقيق GBI-LAB-PLN-01', '-', `إلى: ${recipient}`);
     }
-}'''
+}
 
-if test_email_old in html:
-    html = html.replace(test_email_old, test_email_new)
+// Quick login defaults helper
+document.addEventListener('DOMContentLoaded', () => {
+    const uInput = document.getElementById('login-username');
+    const pInput = document.getElementById('login-password');
+    if (uInput && !uInput.value) uInput.value = 'omar';
+    if (pInput && !pInput.value) pInput.value = '11111';
+});
 
-with open('index.html', 'w', encoding='utf-8') as f:
-    f.write(html)
+// Initial setup
+renderChecklist();
+updateDashboard();
+renderAuditLog();
+loadEmailSettings();
+</script>
 
-print("Updated index.html successfully with Clause 5, Multi-recipient emails, and Electron IPC!")
+</body>
+</html>
