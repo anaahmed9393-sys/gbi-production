@@ -752,6 +752,219 @@
             .main-content { padding: 16px; }
             .nc-extra { grid-template-columns: 1fr; }
         }
+    
+        /* ==================== MASTER MOBILE & RESPONSIVE APP STYLES ==================== */
+        @media (max-width: 850px) {
+            body {
+                padding-bottom: 75px !important; /* Space for bottom nav */
+                background-color: #f1f5f9;
+            }
+
+            .app-layout {
+                flex-direction: column !important;
+            }
+
+            .sidebar {
+                display: none !important; /* Replaced by mobile bottom nav & top bar */
+            }
+
+            .main-content {
+                padding: 12px 10px !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+
+            /* Mobile Top Bar */
+            .brand-navbar {
+                padding: 14px 16px !important;
+                border-radius: 14px !important;
+                margin-bottom: 14px !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+
+            .brand-title {
+                font-size: 16.5px !important;
+            }
+
+            .brand-subtitle {
+                font-size: 11.5px !important;
+            }
+
+            /* Mobile Tabs (Horizontal Scrollable Pills) */
+            .st-tabs-container {
+                padding: 4px !important;
+                gap: 6px !important;
+                margin-bottom: 16px !important;
+                border-radius: 12px !important;
+            }
+
+            .st-tab-btn {
+                padding: 8px 12px !important;
+                font-size: 12px !important;
+                border-radius: 10px !important;
+            }
+
+            /* Mobile KPI Grid */
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+                margin-bottom: 16px !important;
+            }
+
+            .kpi-card {
+                padding: 14px 10px !important;
+                border-radius: 12px !important;
+            }
+
+            .kpi-num {
+                font-size: 24px !important;
+                margin: 4px 0 !important;
+            }
+
+            .kpi-label {
+                font-size: 11px !important;
+            }
+
+            .card {
+                padding: 16px 14px !important;
+                border-radius: 14px !important;
+                margin-bottom: 16px !important;
+            }
+
+            /* Mobile Checklist Items */
+            .item-card {
+                padding: 16px 14px !important;
+                border-radius: 12px !important;
+                margin-bottom: 14px !important;
+            }
+
+            .item-header {
+                font-size: 14px !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 6px !important;
+            }
+
+            .question-text {
+                font-size: 13.5px !important;
+                line-height: 1.6 !important;
+            }
+
+            .evidence-box {
+                font-size: 12px !important;
+                padding: 10px 12px !important;
+            }
+
+            .nc-extra {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+                padding: 12px !important;
+            }
+
+            /* Mobile Forms Grid */
+            .forms-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+
+            .form-card {
+                padding: 16px 14px !important;
+                border-radius: 12px !important;
+            }
+
+            /* Mobile Modal A4 Sheet Container */
+            .modal-overlay {
+                padding: 8px 4px !important;
+            }
+
+            .a4-sheet-container {
+                padding: 16px 12px !important;
+                border-radius: 10px !important;
+                margin: 0 auto 30px auto !important;
+                border-top: 4px solid #0a192f !important;
+                border-bottom: 4px solid #d4af37 !important;
+            }
+
+            .a4-header-grid {
+                grid-template-columns: 1fr !important;
+                gap: 6px !important;
+            }
+
+            .a4-header-right, .a4-header-center, .a4-header-left {
+                border-left: none !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+                text-align: center !important;
+                padding: 8px !important;
+            }
+
+            .a4-header-left > div {
+                justify-content: center !important;
+            }
+
+            .a4-footer-signatures {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+
+            .sig-box {
+                font-size: 11px !important;
+                padding: 8px !important;
+            }
+
+            /* Mobile Sticky Bottom Navigation Bar */
+            .mobile-bottom-nav {
+                display: flex !important;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100vw;
+                height: 62px;
+                background: #0b132b;
+                border-top: 2px solid #d4af37;
+                z-index: 99999;
+                justify-content: space-around;
+                align-items: center;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+                padding: 0 4px;
+            }
+
+            .mobile-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: #94a3b8;
+                font-size: 10.5px;
+                font-weight: 700;
+                text-decoration: none;
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 6px 8px;
+                border-radius: 8px;
+                transition: all 0.2s;
+                flex: 1;
+            }
+
+            .mobile-nav-item.active {
+                color: #d4af37;
+                background: rgba(212, 175, 55, 0.12);
+            }
+
+            .mobile-nav-item span.icon {
+                font-size: 18px;
+                margin-bottom: 2px;
+            }
+        }
+
+        @media (min-width: 851px) {
+            .mobile-bottom-nav {
+                display: none !important;
+            }
+        }
+    
     </style>
     <script>
         // Instant Pre-Render Interception for QR Scans
@@ -1764,51 +1977,74 @@ function generateRealDocumentQRCode(form) {
     `;
 }
 
+
+// ==================== SELF-CONTAINED QR DIRECT DOCUMENT RENDERER ====================
+function renderDirectQRDocument(formCode) {
+    if (!formCode) return;
+    
+    // Find matching form
+    const codeClean = formCode.toUpperCase().trim();
+    let form = labFormsData.find(f => f.code.toUpperCase() === codeClean || f.id.toUpperCase() === codeClean);
+    
+    // Fallback if not found: default to REC-13 (Fire Assay)
+    if (!form && labFormsData.length > 0) {
+        form = labFormsData.find(f => f.code.includes(codeClean)) || labFormsData[0];
+    }
+    
+    if (!form) return;
+    
+    currentActiveFormObject = form;
+    currentSelectedFormId = form.id;
+    
+    // Load rows or create clean rows
+    const savedKey = 'gbi_form_data_' + form.code;
+    const saved = localStorage.getItem(savedKey);
+    if (saved) {
+        try { currentFormRowsData = JSON.parse(saved); } catch(e) { currentFormRowsData = createBlankRows(form, 3); }
+    } else {
+        currentFormRowsData = createBlankRows(form, 3);
+    }
+
+    // Hide login & main dashboard
+    const loginEl = document.getElementById('login-screen');
+    if (loginEl) loginEl.style.display = 'none';
+    const mainApp = document.getElementById('main-app');
+    if (mainApp) mainApp.style.display = 'none';
+
+    // Show standalone QR view
+    const standaloneView = document.getElementById('standalone-qr-view');
+    if (standaloneView) {
+        standaloneView.style.display = 'block';
+        standaloneView.style.visibility = 'visible';
+        standaloneView.style.opacity = '1';
+    }
+
+    // Render directly into standalone target
+    renderA4SheetInTarget(form, 'standalone-sheet-target');
+    
+    // Generate QR in standalone view
+    setTimeout(() => {
+        generateRealDocumentQRCode(form);
+    }, 50);
+}
+
 function checkUrlForDirectFormView() {
     try {
         const params = new URLSearchParams(window.location.search);
         let formCode = params.get('form') || params.get('doc') || params.get('verify') || params.get('code');
         
-        // Also check hash like #GBI-LAB-REC-13
         if (!formCode && window.location.hash) {
             formCode = window.location.hash.replace('#', '').trim();
         }
 
         if (formCode) {
-            const targetForm = labFormsData.find(f => 
-                f.code.toUpperCase() === formCode.toUpperCase() || 
-                f.id.toUpperCase() === formCode.toUpperCase()
-            );
-            if (targetForm) {
-                // Ensure login and main app are strictly hidden
-                const loginEl = document.getElementById('login-screen');
-                if (loginEl) loginEl.style.display = 'none';
-                const mainApp = document.getElementById('main-app');
-                if (mainApp) mainApp.style.display = 'none';
-                
-                const standaloneView = document.getElementById('standalone-qr-view');
-                if (standaloneView) {
-                    standaloneView.style.display = 'block';
-                    currentActiveFormObject = targetForm;
-                    currentSelectedFormId = targetForm.id;
-                    
-                    const savedKey = 'gbi_form_data_' + targetForm.code;
-                    const saved = localStorage.getItem(savedKey);
-                    if (saved) {
-                        try { currentFormRowsData = JSON.parse(saved); } catch(e) { currentFormRowsData = createBlankRows(targetForm, 3); }
-                    } else {
-                        currentFormRowsData = createBlankRows(targetForm, 3);
-                    }
-
-                    renderA4SheetInTarget(targetForm, 'standalone-sheet-target');
-                    setTimeout(() => { generateRealDocumentQRCode(targetForm); }, 50);
-                }
-            }
+            renderDirectQRDocument(formCode);
         }
     } catch(e) {
         console.error('Error in checkUrlForDirectFormView:', e);
     }
 }
+
 
 
 
@@ -1903,6 +2139,27 @@ function logout() {
     logAudit('تسجيل خروج', 'النظام', '-', '-');
     document.getElementById('main-app').style.display = 'none';
     document.getElementById('login-screen').style.display = 'block';
+}
+
+
+function switchTabMobile(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.st-tab-btn').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+    
+    const target = document.getElementById(tabId);
+    if (target) target.style.display = 'block';
+    
+    if (btn) btn.classList.add('active');
+    
+    // Sync desktop tab button
+    const deskBtn = document.querySelector(`.st-tab-btn[onclick*="${tabId}"]`);
+    if (deskBtn) deskBtn.classList.add('active');
+    
+    if (tabId === 'tab-dash') updateDashboard();
+    if (tabId === 'tab-forms') renderForms();
+    if (tabId === 'tab-audit-trail') renderAuditLog();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function switchTab(tabId, btn) {
