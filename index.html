@@ -665,49 +665,17 @@
             color: #059669;
         }
 
-        /* Standalone QR View Styles */
-        #standalone-qr-view {
-            display: none;
-            width: 100%;
-            min-height: 100vh;
-            background: #0a192f;
-            padding: 15px 10px;
-            box-sizing: border-box;
-        }
-
-        .verification-top-banner {
-            max-width: 960px;
-            margin: 0 auto 15px auto;
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            color: #ffffff;
-            border-radius: 10px;
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 25px rgba(5, 150, 105, 0.3);
-            border: 1px solid #34d399;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .verification-top-banner h3 {
-            margin: 0;
-            font-size: 14px;
-            font-weight: 800;
-        }
-
-        /* Mobile Adjustments */
+        /* Mobile & Modal Adjustments */
         @media (max-width: 768px) {
             .app-layout { flex-direction: column; }
             .sidebar { width: 100%; }
             .main-content { padding: 12px; }
-            .modal-overlay { padding: 10px 5px; }
-            .a4-sheet-container { padding: 18px 14px; margin-bottom: 20px; }
-            .a4-header-grid { grid-template-columns: 1fr; gap: 6px; }
+            .modal-overlay { padding: 8px 4px; }
+            .a4-sheet-container { padding: 16px 12px; margin-bottom: 20px; border-radius: 8px; }
+            .a4-header-grid { grid-template-columns: 1fr; gap: 8px; }
             .a4-header-right, .a4-header-center, .a4-header-left { border-left: none; border-bottom: 1px solid #e2e8f0; text-align: center; }
-            .a4-footer-signatures { grid-template-columns: 1fr 1fr; }
-            .sig-box { font-size: 10.5px; }
+            .a4-footer-signatures { grid-template-columns: 1fr; gap: 10px; }
+            .sig-box { font-size: 11px; }
         }
 
         @media print {
@@ -967,45 +935,22 @@
     
     </style>
     <script>
-        // Instant Pre-Render Interception for QR Scans
+        // Instant Pre-Render Interception for Direct QR Scans
         (function() {
             try {
                 var p = new URLSearchParams(window.location.search);
                 var f = p.get('form') || p.get('doc') || p.get('verify') || p.get('code');
+                if (!f && window.location.hash) {
+                    f = window.location.hash.replace('#', '').trim();
+                }
                 if (f) {
-                    document.write('<style>#login-screen, #main-app, .sidebar, .brand-navbar { display: none !important; } #standalone-qr-view { display: block !important; }</style>');
+                    document.write('<style>#login-screen, #main-app { display: none !important; } #form-modal { display: flex !important; }</style>');
                 }
             } catch(e) {}
         })();
     </script>
 </head>
 <body>
-    <!-- STANDALONE DIRECT QR VERIFICATION DOCUMENT VIEW (INSTANT FULL-PAGE VIEW) -->
-    <div id="standalone-qr-view" style="display: none;">
-        <div class="verification-top-banner no-print">
-            <div>
-                <h3>🛡️ تم التحقق الرقمي بنجاح: وثيقة وسجل رسمي معتمد ومطابق لمواصفة ISO/IEC 17025:2017</h3>
-                <span style="font-size:11.5px; opacity:0.9; margin-top:3px; display:block;">مختبر GBI لفحص الذهب والمعادن الثمينة • نظام إدارة الجودة المعتمد دولياً</span>
-            </div>
-            <div style="display:flex; gap:8px;">
-                <button class="btn btn-gold" style="font-size:12px; padding:6px 14px;" onclick="window.print()">🖨️ طباعة A4</button>
-                <button class="btn" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid #fff; font-size:12px; padding:6px 14px;" onclick="exitStandaloneView()">🏢 الدخول للمنصة</button>
-            </div>
-        </div>
-
-        <div style="max-width: 960px; margin: 0 auto;">
-            <div class="a4-sheet-container">
-                <div class="a4-watermark">GBI LAB • ISO/IEC 17025 ACCREDITED • OFFICIAL QUALITY RECORD</div>
-                <div id="standalone-sheet-target">
-                    <!-- Dynamically Injected Verified Official Form Content -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    
-    </div>
-
 
     <!-- LOGIN SCREEN -->
     <div id="login-screen" style="display: block; max-width: 480px; margin: 60px auto 40px auto; padding: 0 20px;">
@@ -1805,7 +1750,7 @@ function renderA4Sheet(form) {
         </div>
 
         <!-- DYNAMIC DATA TABLE -->
-        <div class="custom-table-container">
+        <div class="table-responsive-wrapper">
             <table class="a4-table-styled" id="a4-active-dynamic-table">
                 <thead>
                     <tr>
@@ -1978,56 +1923,7 @@ function generateRealDocumentQRCode(form) {
 }
 
 
-// ==================== SELF-CONTAINED QR DIRECT DOCUMENT RENDERER ====================
-function renderDirectQRDocument(formCode) {
-    if (!formCode) return;
-    
-    // Find matching form
-    const codeClean = formCode.toUpperCase().trim();
-    let form = labFormsData.find(f => f.code.toUpperCase() === codeClean || f.id.toUpperCase() === codeClean);
-    
-    // Fallback if not found: default to REC-13 (Fire Assay)
-    if (!form && labFormsData.length > 0) {
-        form = labFormsData.find(f => f.code.includes(codeClean)) || labFormsData[0];
-    }
-    
-    if (!form) return;
-    
-    currentActiveFormObject = form;
-    currentSelectedFormId = form.id;
-    
-    // Load rows or create clean rows
-    const savedKey = 'gbi_form_data_' + form.code;
-    const saved = localStorage.getItem(savedKey);
-    if (saved) {
-        try { currentFormRowsData = JSON.parse(saved); } catch(e) { currentFormRowsData = createBlankRows(form, 3); }
-    } else {
-        currentFormRowsData = createBlankRows(form, 3);
-    }
-
-    // Hide login & main dashboard
-    const loginEl = document.getElementById('login-screen');
-    if (loginEl) loginEl.style.display = 'none';
-    const mainApp = document.getElementById('main-app');
-    if (mainApp) mainApp.style.display = 'none';
-
-    // Show standalone QR view
-    const standaloneView = document.getElementById('standalone-qr-view');
-    if (standaloneView) {
-        standaloneView.style.display = 'block';
-        standaloneView.style.visibility = 'visible';
-        standaloneView.style.opacity = '1';
-    }
-
-    // Render directly into standalone target
-    renderA4SheetInTarget(form, 'standalone-sheet-target');
-    
-    // Generate QR in standalone view
-    setTimeout(() => {
-        generateRealDocumentQRCode(form);
-    }, 50);
-}
-
+// ==================== REAL-TIME QR & DIRECT FORM VIEW ROUTER ====================
 function checkUrlForDirectFormView() {
     try {
         const params = new URLSearchParams(window.location.search);
@@ -2038,18 +1934,37 @@ function checkUrlForDirectFormView() {
         }
 
         if (formCode) {
-            renderDirectQRDocument(formCode);
+            const codeClean = formCode.toUpperCase().trim();
+            let targetForm = labFormsData.find(f => f.code.toUpperCase() === codeClean || f.id.toUpperCase() === codeClean);
+            if (!targetForm && labFormsData.length > 0) {
+                targetForm = labFormsData.find(f => f.code.toUpperCase().includes(codeClean)) || labFormsData[0];
+            }
+
+            if (targetForm) {
+                // Hide login & main dashboard
+                const loginEl = document.getElementById('login-screen');
+                if (loginEl) loginEl.style.display = 'none';
+                const mainApp = document.getElementById('main-app');
+                if (mainApp) mainApp.style.display = 'none';
+
+                // Open directly in preview mode (showing the full official A4 sheet matching Image 1)
+                openFormModal(targetForm.id, 'preview');
+            }
         }
     } catch(e) {
         console.error('Error in checkUrlForDirectFormView:', e);
     }
 }
 
-
-
-
 function closeFormModal() {
     document.getElementById('form-modal').style.display = 'none';
+    const mainApp = document.getElementById('main-app');
+    const loginScreen = document.getElementById('login-screen');
+    if (mainApp && mainApp.style.display === 'block') {
+        // already in dashboard
+    } else {
+        if (loginScreen) loginScreen.style.display = 'block';
+    }
 }
 
 async function saveFilledFormRecord() {
@@ -2760,6 +2675,7 @@ renderForms();
 updateDashboard();
 renderAuditLog();
 loadEmailSettings();
+checkUrlForDirectFormView();
 </script>
 
 
