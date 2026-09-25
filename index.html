@@ -944,7 +944,10 @@
                     f = window.location.hash.replace('#', '').trim();
                 }
                 if (f) {
-                    document.write('<style>#login-screen, #main-app { display: none !important; } #form-modal { display: flex !important; }</style>');
+                    var st = document.createElement('style');
+                    st.id = 'qr-pre-render-style';
+                    st.textContent = '#login-screen, #main-app { display: none !important; } #form-modal { display: flex !important; }';
+                    document.head.appendChild(st);
                 }
             } catch(e) {}
         })();
@@ -953,29 +956,35 @@
 <body>
 
     <!-- LOGIN SCREEN -->
-    <div id="login-screen" style="display: block; max-width: 480px; margin: 60px auto 40px auto; padding: 0 20px;">
+    <div id="login-screen" style="display: block; max-width: 500px; margin: 50px auto 40px auto; padding: 0 20px;">
         <div style="text-align: center; margin-bottom: 25px;">
             <div style="display: inline-block; background: linear-gradient(135deg, #0b132b, #1c2541); padding: 18px; border-radius: 22px; box-shadow: 0 10px 30px rgba(11, 19, 43, 0.4); border: 2px solid #d97706;">
                 <span style="font-size: 38px;">🏅</span>
             </div>
-            <h2 style="color: #0f172a; margin: 16px 0 6px 0; font-size: 24px; font-weight: 800;">منصة إدارة التدقيق الداخلي والأتمتة</h2>
-            <p style="color: #64748b; font-size: 14px; margin: 0;">مختبر فحص ومعايرة الذهب والمعادن الثمينة (ISO/IEC 17025:2017)</p>
+            <h2 style="color: #0f172a; margin: 16px 0 6px 0; font-size: 23px; font-weight: 800;">منصة إدارة التدقيق الداخلي والأتمتة</h2>
+            <p style="color: #64748b; font-size: 13.5px; margin: 0;">مختبر فحص ومعايرة الذهب والمعادن الثمينة (ISO/IEC 17025:2017)</p>
         </div>
 
-        <div class="card">
-            <h4 style="margin-bottom: 16px; font-size: 16px;">🔐 تسجيل الدخول إلى المنصة</h4>
+        <div class="card" style="box-shadow: 0 15px 35px rgba(0,0,0,0.08); border-radius: 18px; border: 1.5px solid #e2e8f0;">
+            <h4 style="margin-bottom: 16px; font-size: 16px; font-weight: 800; color: #0a192f; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">🔐 تسجيل الدخول وتحديد الصلاحية</h4>
+            
             <div class="input-group">
-                <label>اسم المستخدم</label>
-                <input type="text" id="login-username" value="omar" placeholder="أدخل اسم المستخدم">
+                <label style="font-weight: 700; color: #1e293b;">نوع المستخدم / الصفة الوظيفية</label>
+                <select id="login-role-select" style="font-weight: 700; font-size: 14px; padding: 11px 14px;" onchange="onLoginRoleChange()">
+                    <option value="admin">Admin</option>
+                    <option value="gm">مدير عام</option>
+                    <option value="auditor">مدقق ومراجع</option>
+                </select>
             </div>
+
             <div class="input-group">
-                <label>كلمة المرور</label>
-                <input type="password" id="login-password" value="11111" placeholder="•••••" onkeydown="if(event.key==='Enter') performLogin()">
+                <label style="font-weight: 700; color: #1e293b;">كلمة المرور (Password)</label>
+                <input type="password" id="login-password" value="" placeholder="أدخل كلمة المرور..." onkeydown="if(event.key==='Enter') performLogin()">
             </div>
-            <button class="btn" style="width: 100%; justify-content: center; margin-top: 6px; padding: 12px; font-size:15px;" onclick="performLogin()">🚀 دخول المنصة</button>
-            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 18px; margin-top: 18px; font-size: 13.5px; color: #166534;">
-                <strong>🛡️ نظام مؤمّن:</strong> جميع كلمات المرور وسجلات التدقيق مشفّرة وفق المعايير القياسية.
-            </div>
+
+            <div id="login-error-msg" style="display: none; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; margin-bottom: 14px;"></div>
+
+            <button class="btn" style="width: 100%; justify-content: center; margin-top: 4px; padding: 12px; font-size: 15px; font-weight: 800;" onclick="performLogin()">🚀 دخول المنصة</button>
         </div>
     </div>
 
@@ -997,11 +1006,11 @@
                 <!-- User Profile Card -->
                 <div style="text-align: center; padding: 16px 12px; background: rgba(255,255,255,0.06); border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
                     <div id="sidebar-avatar" style="width: 48px; height: 48px; background: #1c2541; border: 2px solid #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px auto; color: #f59e0b; font-size: 20px; font-weight: 800;">
-                        ع
+                        A
                     </div>
-                    <h4 id="sidebar-name" style="margin: 0; font-size: 15px; color: #ffffff; font-weight: 800;">عمر - مدير توكيد الجودة</h4>
+                    <h4 id="sidebar-name" style="margin: 0; font-size: 14.5px; color: #ffffff; font-weight: 800;">مسؤول النظام الأعلى (Admin)</h4>
                     <div style="margin-top: 6px;">
-                        <span id="sidebar-role" style="background: rgba(79, 70, 229, 0.4); color: #c7d2fe; font-weight: 700; padding: 3px 10px; border-radius: 12px; font-size: 11.5px; border: 1px solid rgba(79, 70, 229, 0.6);">مدير جودة</span>
+                        <span id="sidebar-role" style="background: rgba(79, 70, 229, 0.4); color: #c7d2fe; font-weight: 700; padding: 3px 10px; border-radius: 12px; font-size: 11.5px; border: 1px solid rgba(79, 70, 229, 0.6);">👑 Admin (صلاحيات كاملة)</span>
                     </div>
                 </div>
 
@@ -1036,7 +1045,7 @@
                 <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                     <span class="status-pill-online">🟢 خدمة التدقيق نشطة</span>
                     <span style="background: rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 10px; font-size: 13px; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15);">
-                        المستخدم: <strong id="top-user-name" style="color: #ffffff;">عمر - مدير توكيد الجودة</strong> (<span id="top-user-role">مدير جودة</span>)
+                        المستخدم: <strong id="top-user-name" style="color: #ffffff;">مسؤول النظام الأعلى (Admin)</strong> (<span id="top-user-role">👑 Admin</span>)
                     </span>
                 </div>
             </div>
@@ -1049,7 +1058,7 @@
                 <button class="st-tab-btn" onclick="switchTab('tab-plan', this)">📅 خطة التدقيق (Audit Plan)</button>
                 <button class="st-tab-btn" onclick="switchTab('tab-audit-trail', this)">📜 سجل الحركات (Audit Trail)</button>
                 <button class="st-tab-btn" id="tab-btn-settings" onclick="switchTab('tab-settings', this)">⚙️ إعدادات البريد والأتمتة</button>
-                <button class="st-tab-btn" id="tab-btn-users" onclick="switchTab('tab-users', this)">👥 المستخدمين والصلاحيات</button>
+                <button class="st-tab-btn" id="tab-btn-users" onclick="switchTab('tab-users', this)">👥 إدارة المستخدمين وكلمات المرور</button>
             </div>
 
             <!-- TAB 1: DASHBOARD -->
@@ -1174,15 +1183,20 @@
                             <p style="color: #64748b; font-size: 13.5px;">الشيك ليست التفصيلية لكافة متطلبات المواصفة الدولية ISO/IEC 17025:2017 (35 بنداً قياسياً)</p>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-outline" onclick="openAddItemForm()">➕ إضافة بند جديد</button>
+                            <button class="btn btn-outline" id="btn-add-item-admin" onclick="openAddItemForm()">➕ إضافة بند جديد</button>
                             <button class="btn" style="background: linear-gradient(135deg, #059669, #047857);" onclick="exportToExcel()">📊 تصدير Excel منسق</button>
                             <button class="btn btn-gold" onclick="exportToPDF()">📄 تصدير PDF</button>
                             <button class="btn" onclick="window.print()">🖨️ طباعة</button>
-                            <button class="btn btn-outline" onclick="markAllConforming()">✅ اعتماد الباقي كمطابق</button>
+                            <button class="btn btn-outline" id="btn-mark-conforming-admin" onclick="markAllConforming()">✅ اعتماد الباقي كمطابق</button>
                         </div>
                     </div>
 
-                    <!-- Add Custom Item Form -->
+                    <!-- Read-Only Notice for General Manager & Auditor -->
+                    <div id="chk-permission-notice" style="display:none; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:12px 18px; margin-bottom:18px; color:#1e40af; font-size:13.5px; font-weight:700;">
+                        👁️ <strong>وضع الإطلاع والمراجعة:</strong> أنت تتصفح الشيك ليست والتقارير بصلاحية القراءة. تعديل نتائج التقييمات وإضافة البنود محصورة بمسؤول النظام (Admin).
+                    </div>
+
+                    <!-- Add Custom Item Form (Admin Only) -->
                     <div id="add-item-form" class="card" style="display:none; border: 1.5px dashed var(--primary); margin-bottom: 20px;">
                         <h4 style="margin-bottom: 12px; font-size: 15px;">➕ إضافة بند تدقيق مخصص</h4>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
@@ -1383,43 +1397,25 @@
                 </div>
             </div>
 
-            <!-- TAB 7: USERS -->
+            <!-- TAB 7: USERS & PASSWORD MANAGEMENT (ADMIN ONLY) -->
             <div id="tab-users" class="tab-content" style="display: none;">
                 <div class="card">
-                    <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 6px;">👥 إدارة المستخدمين والصلاحيات (RBAC)</h3>
-                    <p style="color: #64748b; font-size: 13.5px; margin-bottom: 18px;">المستخدمون المسجلون بصلاحيات التدقيق والمراجعة والاعتماد</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">👥 لوحة إدارة المستخدمين والصلاحيات وتعديل كلمات المرور</h3>
+                            <p style="color: #64748b; font-size: 13.5px; margin: 0;">التحكم الكامل في حسابات المنظومة وتعيين كلمات المرور للمدير العام والمدققين ومسؤول النظام (Admin).</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline" style="color: #dc2626; border-color: #dc2626;" onclick="resetAllPasswords()">🔄 استعادة كلمات المرور الافتراضية</button>
+                        </div>
+                    </div>
 
-                    <div class="custom-table-container">
-                        <table class="audit-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 10%;">#</th>
-                                    <th style="width: 25%;">اسم المستخدم</th>
-                                    <th style="width: 40%;">الاسم والصفة الوظيفية</th>
-                                    <th style="text-align: center; width: 25%;">الصلاحية والدور</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>1</td>
-                                    <td><code>omar</code></td>
-                                    <td>عمر - مدير توكيد الجودة</td>
-                                    <td style="text-align: center;"><span class="badge-c">مدير جودة</span></td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td><code>auditor</code></td>
-                                    <td>أحمد - مدقق جودة داخلي</td>
-                                    <td style="text-align: center;"><span class="badge-ofi">مدقق</span></td>
-                                </tr>
-                                <tr>
-                                    <td>3</td>
-                                    <td><code>reviewer</code></td>
-                                    <td>سارة - مراجع جودة معتمد</td>
-                                    <td style="text-align: center;"><span class="badge-pending">مراجع</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; font-size: 13.5px; color: #166534;">
+                        <strong>👑 صلاحيات Admin الحصرية:</strong> بصفتك مسؤول النظام الأعلى، يمكنك تعديل كلمات المرور لجميع الحسابات وحفظها فوراً بذاكرة النظام الدائمة (localStorage).
+                    </div>
+
+                    <div id="users-admin-cards-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 20px;">
+                        <!-- Injected by renderUsersAdminTable() -->
                     </div>
                 </div>
             </div>
@@ -1427,24 +1423,20 @@
         </main>
     </div>
 
-            <!-- A4 OFFICIAL FORM SHEET MODAL -->
+    <!-- A4 OFFICIAL FORM SHEET MODAL -->
     <div id="form-modal" class="modal-overlay">
         <div class="a4-sheet-container">
             <!-- Security Watermark -->
             <div class="a4-watermark">GBI LAB • ISO/IEC 17025 ACCREDITED • OFFICIAL QUALITY RECORD</div>
 
             <!-- Action Toolbar (No-Print) -->
-            <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border-radius:10px; padding:10px 14px; margin-bottom:16px; border:1px solid #cbd5e1; flex-wrap:wrap; gap:8px;">
+            <div id="form-modal-toolbar" class="no-print" style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border-radius:10px; padding:10px 14px; margin-bottom:16px; border:1px solid #cbd5e1; flex-wrap:wrap; gap:8px;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-weight:900; color:#0a192f; font-size:13.5px;">📄 نافذة تعبئة النموذج الرسمي المعتمد (ISO 17025 A4 Format)</span>
+                    <span style="font-weight:900; color:#0a192f; font-size:13.5px;" id="modal-title-text">📄 وثيقة وسجل رسمي معتمد (ISO 17025 A4 Format)</span>
                 </div>
-                <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <button class="btn" style="background:#059669; font-size:12px; padding:6px 12px;" onclick="saveFilledFormRecord()">💾 حفظ وتوثيق</button>
-                    <button class="btn" style="background:#4f46e5; font-size:12px; padding:6px 12px;" onclick="addNewTableRow()">➕ سطر جديد</button>
-                    <button class="btn btn-outline" style="font-size:12px; padding:6px 10px; color:#d97706; border-color:#d97706;" onclick="loadReferenceSampleData()">💡 عينات استرشادية</button>
-                    <button class="btn btn-outline" style="font-size:12px; padding:6px 10px; color:#dc2626; border-color:#dc2626;" onclick="clearActiveFormRows()">🧹 تفريغ</button>
-                    <button class="btn btn-gold" style="font-size:12px; padding:6px 12px;" onclick="window.print()">🖨️ طباعة A4</button>
-                    <button class="btn btn-outline" style="font-size:12px; padding:6px 12px;" onclick="closeFormModal()">✖ إغلاق</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button class="btn btn-gold" style="font-size:12.5px; padding:7px 18px; font-weight:800;" onclick="window.print()"><i class="fas fa-print"></i> 🖨️ طباعة السجل الرسمي A4</button>
+                    <button class="btn btn-outline" style="font-size:12.5px; padding:7px 16px;" onclick="closeFormModal()"><i class="fas fa-times"></i> ✖ إغلاق</button>
                 </div>
             </div>
 
@@ -1594,6 +1586,7 @@ function renderForms(formsToRender = labFormsData) {
     formsToRender.forEach(f => {
         const div = document.createElement('div');
         div.className = 'form-card';
+        const isAdm = (currentRole === 'admin');
         div.innerHTML = `
             <div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
@@ -1605,7 +1598,7 @@ function renderForms(formsToRender = labFormsData) {
                 <p style="font-size: 12.5px; color: #334155; line-height: 1.6; margin-bottom: 12px;">${escapeHtml(f.desc)}</p>
             </div>
             <div style="display:flex; gap:8px; margin-top:12px; border-top:1px solid #f1f5f9; padding-top:10px;">
-                <button class="btn btn-outline" style="flex:1; justify-content:center; padding:6px; font-size:12px;" onclick="openFormModal('${f.id}', 'blank')">📝 تعبئة نموذج فارغ</button>
+                ${isAdm ? `<button class="btn btn-outline" style="flex:1; justify-content:center; padding:6px; font-size:12px;" onclick="openFormModal('${f.id}', 'blank')">📝 تعبئة نموذج فارغ</button>` : ''}
                 <button class="btn" style="flex:1; justify-content:center; padding:6px; font-size:12px;" onclick="openFormModal('${f.id}', 'preview')">👁️ استعراض / طباعة</button>
             </div>
         `;
@@ -1639,7 +1632,7 @@ function openFormModal(formId, mode) {
     currentActiveFormObject = form;
     currentSelectedFormId = formId;
 
-    // Check saved data in localStorage or create clean blank rows
+    // Load saved inputs entered by reviewer/auditor, or keep clean blank rows
     const savedKey = 'gbi_form_data_' + form.code;
     const saved = localStorage.getItem(savedKey);
 
@@ -1647,14 +1640,20 @@ function openFormModal(formId, mode) {
         try {
             currentFormRowsData = JSON.parse(saved);
         } catch(e) {
-            currentFormRowsData = createBlankRows(form, 3);
+            currentFormRowsData = createBlankRows(form, 4);
         }
     } else {
-        // Start completely BLANK with 3 clean rows for lab staff data entry
-        currentFormRowsData = createBlankRows(form, 3);
+        // Clean blank empty rows (appears completely empty without dummy data)
+        currentFormRowsData = createBlankRows(form, 4);
     }
 
     renderA4Sheet(form);
+
+    const titleText = document.getElementById('modal-title-text');
+    if (titleText) {
+        titleText.innerHTML = `🛡️ <strong>وثيقة وسجل رسمي معتمد:</strong> ${escapeHtml(form.code)} - ${escapeHtml(form.name)}`;
+    }
+
     document.getElementById('form-modal').style.display = 'flex';
 
     // Generate Real Scanable QR Code
@@ -1672,6 +1671,10 @@ function createBlankRows(form, count = 3) {
 }
 
 function clearActiveFormRows() {
+    if (currentRole !== 'admin') {
+        alert('⚠️ تفريغ البيانات محصور بمسؤول النظام (Admin).');
+        return;
+    }
     if (!currentActiveFormObject) return;
     if (confirm('هل أنت متأكد من تفريغ كافة البيانات والبدء بنموذج فارغ؟')) {
         currentFormRowsData = createBlankRows(currentActiveFormObject, 3);
@@ -1681,6 +1684,10 @@ function clearActiveFormRows() {
 }
 
 function loadReferenceSampleData() {
+    if (currentRole !== 'admin') {
+        alert('⚠️ تحميل البيانات الاسترشادية محصور بمسؤول النظام (Admin).');
+        return;
+    }
     if (!currentActiveFormObject) return;
     const samples = REFERENCE_SAMPLES_DB[currentActiveFormObject.code];
     if (samples && samples.length > 0) {
@@ -1698,6 +1705,7 @@ function loadReferenceSampleData() {
 function renderA4Sheet(form) {
     const target = document.getElementById('a4-sheet-render-target');
     if (!target) return;
+    const isAdm = (currentRole === 'admin');
 
     target.innerHTML = `
         <!-- WORLD-CLASS BILINGUAL HEADER BLOCK -->
@@ -1756,7 +1764,7 @@ function renderA4Sheet(form) {
                     <tr>
                         <th style="width:4%;">#</th>
                         ${form.fields.map(fld => `<th>${escapeHtml(fld)}</th>`).join('')}
-                        <th class="no-print" style="width:5%;">حذف</th>
+                        ${isAdm ? '<th class="no-print" style="width:5%;">حذف</th>' : ''}
                     </tr>
                 </thead>
                 <tbody id="a4-table-body-rows">
@@ -1768,30 +1776,30 @@ function renderA4Sheet(form) {
         <!-- LIVE REMARKS / SUPERVISOR NOTES -->
         <div style="margin-bottom:16px;">
             <label style="display:block; font-weight:800; font-size:11.5px; color:#0a192f; margin-bottom:4px;">ملاحظات التدقيق واعتماد المطابقة الفنية (Technical Verification Remarks):</label>
-            <textarea id="a4-supervisor-notes" class="a4-input-cell" rows="2" style="width:100%; border-radius:6px;" placeholder="سجل هنا أي ملاحظات فنية أو قرارات مطابقة خاصة بهذا التشغيل..."></textarea>
+            <textarea id="a4-supervisor-notes" class="a4-input-cell" rows="2" style="width:100%; border-radius:6px; ${isAdm ? '' : 'background:#f8fafc; border-color:#e2e8f0; cursor:default;'}" ${isAdm ? '' : 'readonly'} placeholder="${isAdm ? 'سجل هنا أي ملاحظات فنية أو قرارات مطابقة خاصة بهذا التشغيل...' : 'لا توجد ملاحظات مسجلة'}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_notes_' + currentActiveFormObject.code, this.value)">${escapeHtml(localStorage.getItem('gbi_form_notes_' + form.code) || '')}</textarea>
         </div>
 
-        <!-- SIGNATURES & OFFICIAL SEAL BLOCK (BLANK & READY FOR LAB STAFF SIGNATURES) -->
+        <!-- SIGNATURES & OFFICIAL SEAL BLOCK -->
         <div class="a4-footer-signatures">
             <div class="sig-box">
                 <div class="sig-box-title">إعداد / الفاحص المعتمد<br><span style="font-size:9.5px; font-weight:normal; color:#64748b;">Prepared by / Assayer</span></div>
-                <strong>الاسم:</strong> <input type="text" id="sig-name-1" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" placeholder="........................................"><br>
-                <strong>الصفة:</strong> <input type="text" id="sig-role-1" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" placeholder="محلل الذهب المختص"><br>
-                <strong>التوقيع:</strong> <input type="text" id="sig-sign-1" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:65%; padding:2px; font-family:cursive; color:#4f46e5; background:transparent;" placeholder="التوقيع / .............">
+                <strong>الاسم:</strong> <input type="text" id="sig-name-1" value="${escapeHtml(localStorage.getItem('gbi_form_name1_' + form.code) || '')}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_name1_' + currentActiveFormObject.code, this.value)" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" ${isAdm ? '' : 'readonly'} placeholder="........................................"><br>
+                <strong>الصفة:</strong> <input type="text" id="sig-role-1" value="${escapeHtml(localStorage.getItem('gbi_form_role1_' + form.code) || 'محلل الذهب المختص')}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_role1_' + currentActiveFormObject.code, this.value)" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" ${isAdm ? '' : 'readonly'} placeholder="محلل الذهب المختص"><br>
+                <strong>التوقيع:</strong> <input type="text" id="sig-sign-1" value="${escapeHtml(localStorage.getItem('gbi_form_sign1_' + form.code) || '')}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_sign1_' + currentActiveFormObject.code, this.value)" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:65%; padding:2px; font-family:cursive; color:#4f46e5; background:transparent;" ${isAdm ? '' : 'readonly'} placeholder="التوقيع / .............">
             </div>
 
             <div class="sig-box">
                 <div class="sig-box-title">مراجعة / توكيد الجودة<br><span style="font-size:9.5px; font-weight:normal; color:#64748b;">Reviewed by / QA Mgr</span></div>
-                <strong>الاسم:</strong> <input type="text" id="sig-name-2" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" placeholder="........................................"><br>
-                <strong>الصفة:</strong> <input type="text" id="sig-role-2" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" placeholder="مسؤول توكيد الجودة"><br>
-                <strong>التوقيع:</strong> <input type="text" id="sig-sign-2" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:65%; padding:2px; font-family:cursive; color:#4f46e5; background:transparent;" placeholder="التوقيع / .............">
+                <strong>الاسم:</strong> <input type="text" id="sig-name-2" value="${escapeHtml(localStorage.getItem('gbi_form_name2_' + form.code) || '')}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_name2_' + currentActiveFormObject.code, this.value)" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" ${isAdm ? '' : 'readonly'} placeholder="........................................"><br>
+                <strong>الصفة:</strong> <input type="text" id="sig-role-2" value="${escapeHtml(localStorage.getItem('gbi_form_role2_' + form.code) || 'مسؤول توكيد الجودة')}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_role2_' + currentActiveFormObject.code, this.value)" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" ${isAdm ? '' : 'readonly'} placeholder="مسؤول توكيد الجودة"><br>
+                <strong>التوقيع:</strong> <input type="text" id="sig-sign-2" value="${escapeHtml(localStorage.getItem('gbi_form_sign2_' + form.code) || '')}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_sign2_' + currentActiveFormObject.code, this.value)" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:65%; padding:2px; font-family:cursive; color:#4f46e5; background:transparent;" ${isAdm ? '' : 'readonly'} placeholder="التوقيع / .............">
             </div>
 
             <div class="sig-box">
                 <div class="sig-box-title">الاعتماد / المدير الفني<br><span style="font-size:9.5px; font-weight:normal; color:#64748b;">Approved by / Tech Dir</span></div>
-                <strong>الاسم:</strong> <input type="text" id="sig-name-3" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" placeholder="........................................"><br>
-                <strong>الصفة:</strong> <input type="text" id="sig-role-3" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" placeholder="المدير الفني للمختبر"><br>
-                <strong>التوقيع:</strong> <input type="text" id="sig-sign-3" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:65%; padding:2px; font-family:cursive; color:#4f46e5; background:transparent;" placeholder="التوقيع / .............">
+                <strong>الاسم:</strong> <input type="text" id="sig-name-3" value="${escapeHtml(localStorage.getItem('gbi_form_name3_' + form.code) || '')}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_name3_' + currentActiveFormObject.code, this.value)" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" ${isAdm ? '' : 'readonly'} placeholder="........................................"><br>
+                <strong>الصفة:</strong> <input type="text" id="sig-role-3" value="${escapeHtml(localStorage.getItem('gbi_form_role3_' + form.code) || 'المدير الفني للمختبر')}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_role3_' + currentActiveFormObject.code, this.value)" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:70%; padding:2px; background:transparent;" ${isAdm ? '' : 'readonly'} placeholder="المدير الفني للمختبر"><br>
+                <strong>التوقيع:</strong> <input type="text" id="sig-sign-3" value="${escapeHtml(localStorage.getItem('gbi_form_sign3_' + form.code) || '')}" oninput="if(currentActiveFormObject) localStorage.setItem('gbi_form_sign3_' + currentActiveFormObject.code, this.value)" style="border:none; border-bottom:1px dotted #94a3b8; font-size:11px; width:65%; padding:2px; font-family:cursive; color:#4f46e5; background:transparent;" ${isAdm ? '' : 'readonly'} placeholder="التوقيع / .............">
             </div>
 
             <div style="text-align:center;">
@@ -1809,6 +1817,7 @@ function renderTableBodyRows(form) {
     if (!currentFormRowsData || currentFormRowsData.length === 0) {
         currentFormRowsData = createBlankRows(form, 3);
     }
+    const isAdm = (currentRole === 'admin');
 
     return currentFormRowsData.map((row, rIdx) => `
         <tr>
@@ -1816,7 +1825,7 @@ function renderTableBodyRows(form) {
             ${form.fields.map((fld, cIdx) => {
                 let cellVal = escapeHtml(row[cIdx] || '');
                 let isCalculated = false;
-                let placeholderText = `أدخل ${escapeHtml(fld)}...`;
+                let placeholderText = isAdm ? `أدخل ${escapeHtml(fld)}...` : '-';
 
                 // Smart Auto-Calculation for Fire Assay Worksheet (REC-13)
                 if (form.code === 'GBI-LAB-REC-13' && cIdx === 4) {
@@ -1830,18 +1839,21 @@ function renderTableBodyRows(form) {
                             id="cell-${rIdx}-${cIdx}"
                             value="${cellVal}" 
                             placeholder="${placeholderText}"
+                            ${isAdm ? '' : 'readonly style="background:#f8fafc; border-color:#e2e8f0; cursor:default;"'}
                             oninput="handleCellInput(${rIdx}, ${cIdx}, this.value, '${form.code}')">
                     </td>
                 `;
             }).join('')}
+            ${isAdm ? `
             <td class="no-print" style="text-align:center;">
                 <button style="background:none; border:none; color:#ef4444; font-size:14px; cursor:pointer;" onclick="deleteTableRow(${rIdx})" title="حذف السطر">🗑️</button>
-            </td>
+            </td>` : ''}
         </tr>
     `).join('');
 }
 
 function handleCellInput(rowIdx, colIdx, val, formCode) {
+    if (currentRole !== 'admin') return;
     if (currentFormRowsData[rowIdx]) {
         currentFormRowsData[rowIdx][colIdx] = val;
     }
@@ -1861,9 +1873,18 @@ function handleCellInput(rowIdx, colIdx, val, formCode) {
             if (calcInput) calcInput.value = calculatedStr;
         }
     }
+
+    // Persist reviewer inputs automatically so they appear on scan or re-opening
+    if (currentActiveFormObject) {
+        localStorage.setItem('gbi_form_data_' + currentActiveFormObject.code, JSON.stringify(currentFormRowsData));
+    }
 }
 
 function addNewTableRow() {
+    if (currentRole !== 'admin') {
+        alert('⚠️ إضافة أسطر جديدة محصورة بمسؤول النظام (Admin).');
+        return;
+    }
     if (!currentActiveFormObject) return;
     const newEmptyRow = currentActiveFormObject.fields.map(() => '');
     currentFormRowsData.push(newEmptyRow);
@@ -1874,6 +1895,10 @@ function addNewTableRow() {
 }
 
 function deleteTableRow(rowIdx) {
+    if (currentRole !== 'admin') {
+        alert('⚠️ حذف أسطر البيانات محصور بمسؤول النظام (Admin).');
+        return;
+    }
     if (currentFormRowsData.length <= 1) {
         alert('يجب الإبقاء على سطر بيانات واحد على الأقل في السجل.');
         return;
@@ -1947,8 +1972,8 @@ function checkUrlForDirectFormView() {
                 const mainApp = document.getElementById('main-app');
                 if (mainApp) mainApp.style.display = 'none';
 
-                // Open directly in preview mode (showing the full official A4 sheet matching Image 1)
-                openFormModal(targetForm.id, 'preview');
+                // Open directly in clean QR mode (showing the full official A4 sheet with Print & Enter Platform only)
+                openFormModal(targetForm.id, 'qr_direct');
             }
         }
     } catch(e) {
@@ -1957,18 +1982,29 @@ function checkUrlForDirectFormView() {
 }
 
 function closeFormModal() {
-    document.getElementById('form-modal').style.display = 'none';
+    var preStyle = document.getElementById('qr-pre-render-style');
+    if (preStyle) preStyle.remove();
+
+    const modal = document.getElementById('form-modal');
+    if (modal) modal.style.display = 'none';
+
     const mainApp = document.getElementById('main-app');
     const loginScreen = document.getElementById('login-screen');
-    if (mainApp && mainApp.style.display === 'block') {
-        // already in dashboard
+    if (currentUser) {
+        if (mainApp) mainApp.style.display = 'flex';
+        if (loginScreen) loginScreen.style.display = 'none';
     } else {
         if (loginScreen) loginScreen.style.display = 'block';
+        if (mainApp) mainApp.style.display = 'none';
     }
 }
 
 async function saveFilledFormRecord() {
     if (!currentActiveFormObject) return;
+    if (currentRole !== 'admin') {
+        alert('⚠️ عذراً، حفظ وتوثيق النماذج متاح لمدير النظام (Admin) أو المستخدمين ذوي الصلاحية.');
+        return;
+    }
 
     // Save to localStorage
     const savedKey = 'gbi_form_data_' + currentActiveFormObject.code;
@@ -2000,14 +2036,31 @@ function loadAndSanitizeData() {
 let currentItems = loadAndSanitizeData();
 localStorage.setItem('gbi_checklist_data_v4', JSON.stringify(currentItems));
 
-const USERS = [
-    { username: 'omar', displayName: 'عمر - مدير توكيد الجودة', role: 'quality_manager', roleLabel: 'مدير جودة' },
-    { username: 'auditor', displayName: 'أحمد - مدقق جودة داخلي', role: 'auditor', roleLabel: 'مدقق' },
-    { username: 'reviewer', displayName: 'سارة - مراجع جودة معتمد', role: 'reviewer', roleLabel: 'مراجع' }
+// ==================== USER ACCOUNTS & RBAC SECURITY ENGINE ====================
+const DEFAULT_ACCOUNTS = [
+    { username: 'admin', displayName: 'مسؤول النظام الأعلى (Admin)', role: 'admin', roleLabel: '👑 Admin (صلاحيات كاملة)', password: '17025', avatar: 'A', desc: 'كامل الصلاحيات: إدارة الشيك ليست، إضافة البنود، إعدادات البريد، وتعديل كلمات المرور' },
+    { username: 'gm', displayName: 'المدير العام (General Manager)', role: 'general_manager', roleLabel: '👔 مدير عام (إطلاع وتقارير)', password: '11111', avatar: 'م', desc: 'وضع الإطلاع والتقارير التنفيذية: استعراض الشيك ليست ولوحة المؤشرات وتصدير التقارير (عرض فقط)' },
+    { username: 'auditor', displayName: 'مدقق ومراجع الجودة (Auditor & Reviewer)', role: 'auditor', roleLabel: '📋 مدقق ومراجع (إطلاع ومراجعة)', password: '11111', avatar: 'د', desc: 'مراجعة وتدقيق: استعراض أدلة المطابقة، سجلات الفحص المخبرية، وسجل الحركات (عرض فقط)' }
 ];
 
-let currentUser = 'omar';
-let currentRole = 'quality_manager';
+function getStoredAccounts() {
+    try {
+        const saved = localStorage.getItem('gbi_system_accounts_v1');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length >= 3) return parsed;
+        }
+    } catch(e) {}
+    localStorage.setItem('gbi_system_accounts_v1', JSON.stringify(DEFAULT_ACCOUNTS));
+    return JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
+}
+
+function saveStoredAccounts(accounts) {
+    localStorage.setItem('gbi_system_accounts_v1', JSON.stringify(accounts));
+}
+
+let currentUser = 'admin';
+let currentRole = 'admin';
 let currentSelectedFormId = null;
 
 function escapeHtml(str) {
@@ -2016,46 +2069,198 @@ function escapeHtml(str) {
     }[ch]));
 }
 
-function performLogin() {
-    let u = (document.getElementById('login-username')?.value || '').trim();
-    let p = (document.getElementById('login-password')?.value || '').trim();
-    if (!u) u = 'omar';
-    if (!p) p = '11111';
-
-    const foundUser = USERS.find(x => x.username.toLowerCase() === u.toLowerCase());
-    
-    if (foundUser) {
-        currentUser = foundUser.username;
-        currentRole = foundUser.role;
-        document.getElementById('sidebar-name').innerText = foundUser.displayName;
-        document.getElementById('sidebar-avatar').innerText = foundUser.username.charAt(0).toUpperCase();
-        document.getElementById('sidebar-role').innerText = foundUser.roleLabel;
-        document.getElementById('top-user-name').innerText = foundUser.displayName;
-        document.getElementById('top-user-role').innerText = foundUser.roleLabel;
-    } else {
-        currentUser = u;
-        currentRole = 'quality_manager';
-        document.getElementById('sidebar-name').innerText = u;
-        document.getElementById('sidebar-avatar').innerText = u.charAt(0).toUpperCase();
-        document.getElementById('sidebar-role').innerText = 'مدير جودة';
-        document.getElementById('top-user-name').innerText = u;
-        document.getElementById('top-user-role').innerText = 'مدير جودة';
+function onLoginRoleChange() {
+    const role = document.getElementById('login-role-select')?.value || 'admin';
+    const accounts = getStoredAccounts();
+    const acc = accounts.find(a => a.username === role);
+    const passInput = document.getElementById('login-password');
+    if (passInput && acc) {
+        passInput.value = acc.password;
     }
+    const errMsg = document.getElementById('login-error-msg');
+    if (errMsg) errMsg.style.display = 'none';
+}
+
+function performLogin() {
+    const selectedUsername = (document.getElementById('login-role-select')?.value || 'admin').trim();
+    const enteredPassword = (document.getElementById('login-password')?.value || '').trim();
+    const errMsg = document.getElementById('login-error-msg');
+
+    const accounts = getStoredAccounts();
+    const foundUser = accounts.find(x => x.username.toLowerCase() === selectedUsername.toLowerCase());
+
+    if (!foundUser) {
+        if (errMsg) {
+            errMsg.innerText = '❌ المستخدم المحدد غير موجود في قاعدة بيانات النظام.';
+            errMsg.style.display = 'block';
+        }
+        return;
+    }
+
+    if (foundUser.password !== enteredPassword) {
+        if (errMsg) {
+            errMsg.innerText = `❌ كلمة المرور غير صحيحة لحساب (${foundUser.displayName})! يرجى التأكد وإعادة المحاولة.`;
+            errMsg.style.display = 'block';
+        }
+        return;
+    }
+
+    if (errMsg) errMsg.style.display = 'none';
+
+    currentUser = foundUser.username;
+    currentRole = foundUser.role;
+
+    // Update Sidebar & Top Header
+    const sbName = document.getElementById('sidebar-name');
+    const sbAvatar = document.getElementById('sidebar-avatar');
+    const sbRole = document.getElementById('sidebar-role');
+    const topName = document.getElementById('top-user-name');
+    const topRole = document.getElementById('top-user-role');
+
+    if (sbName) sbName.innerText = foundUser.displayName;
+    if (sbAvatar) sbAvatar.innerText = foundUser.avatar || foundUser.username.charAt(0).toUpperCase();
+    if (sbRole) sbRole.innerText = foundUser.roleLabel;
+    if (topName) topName.innerText = foundUser.displayName;
+    if (topRole) topRole.innerText = foundUser.roleLabel;
 
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'flex';
+
+    applyRolePermissions();
+    logAudit('تسجيل دخول ناجح', foundUser.displayName, '-', foundUser.roleLabel);
+}
+
+function applyRolePermissions() {
+    const isAdm = (currentRole === 'admin');
+
+    // Header Tabs visibility
+    const tabSettingsBtn = document.getElementById('tab-btn-settings');
+    const tabUsersBtn = document.getElementById('tab-btn-users');
+    if (tabSettingsBtn) tabSettingsBtn.style.display = isAdm ? 'inline-flex' : 'none';
+    if (tabUsersBtn) tabUsersBtn.style.display = isAdm ? 'inline-flex' : 'none';
+
+    // Checklist tab controls
+    const chkNotice = document.getElementById('chk-permission-notice');
+    const addItemBtn = document.getElementById('btn-add-item-admin');
+    const markConformBtn = document.getElementById('btn-mark-conforming-admin');
+    const submitChkBtn = document.getElementById('btn-save-checklist-submit');
+
+    if (chkNotice) chkNotice.style.display = isAdm ? 'none' : 'block';
+    if (addItemBtn) addItemBtn.style.display = isAdm ? 'inline-flex' : 'none';
+    if (markConformBtn) markConformBtn.style.display = isAdm ? 'inline-flex' : 'none';
+    if (submitChkBtn) submitChkBtn.style.display = isAdm ? 'flex' : 'none';
+
+    // Rerender active views
     renderChecklist();
     renderForms();
     updateDashboard();
-    logAudit('تسجيل دخول', 'النظام', '-', '-');
+    renderUsersAdminTable();
 }
 
 function logout() {
-    logAudit('تسجيل خروج', 'النظام', '-', '-');
+    logAudit('تسجيل خروج', currentUser, '-', '-');
     document.getElementById('main-app').style.display = 'none';
     document.getElementById('login-screen').style.display = 'block';
+    const passInput = document.getElementById('login-password');
+    if (passInput) passInput.value = '';
+    const errMsg = document.getElementById('login-error-msg');
+    if (errMsg) errMsg.style.display = 'none';
 }
 
+function renderUsersAdminTable() {
+    const container = document.getElementById('users-admin-cards-container');
+    if (!container) return;
+
+    const accounts = getStoredAccounts();
+    container.innerHTML = accounts.map(acc => `
+        <div class="card" style="border: 1.5px solid ${acc.role === 'admin' ? '#d97706' : '#cbd5e1'}; background: #ffffff; border-radius: 14px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.04);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 42px; height: 42px; background: #0b132b; color: #d4af37; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">
+                        ${escapeHtml(acc.avatar)}
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: #0a192f;">${escapeHtml(acc.displayName)}</h4>
+                        <span style="font-size: 12px; color: #64748b; font-family: monospace !important;">username: <strong>${escapeHtml(acc.username)}</strong></span>
+                    </div>
+                </div>
+                <span class="${acc.role === 'admin' ? 'badge-c' : acc.role === 'general_manager' ? 'badge-ofi' : 'badge-pending'}" style="font-size: 11px;">
+                    ${escapeHtml(acc.roleLabel)}
+                </span>
+            </div>
+            
+            <p style="font-size: 12.5px; color: #475569; margin-bottom: 14px; line-height: 1.6;">
+                ${escapeHtml(acc.desc || '')}
+            </p>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">كلمة المرور الحالية المعتمدة:</div>
+                <div style="font-size: 14px; font-weight: 800; font-family: monospace; color: #0a192f;">
+                    🔑 <span id="pwd-display-${acc.username}">${escapeHtml(acc.password)}</span>
+                </div>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label style="font-size: 12.5px; font-weight: 700; color: #0a192f;">تعيين كلمة مرور جديدة:</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="new-pwd-input-${acc.username}" placeholder="أدخل كلمة المرور الجديدة..." style="font-size: 13px; padding: 8px 12px;">
+                    <button class="btn" style="padding: 8px 14px; font-size: 12.5px; white-space: nowrap;" onclick="updateUserPassword('${acc.username}')">
+                        💾 حفظ
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateUserPassword(username) {
+    if (currentRole !== 'admin') {
+        alert('⚠️ عذراً، تعديل كلمات المرور متاح حصرياً لمسؤول النظام (Admin).');
+        return;
+    }
+
+    const input = document.getElementById(`new-pwd-input-${username}`);
+    const newPass = (input?.value || '').trim();
+
+    if (!newPass) {
+        alert('⚠️ يرجى إدخال كلمة المرور الجديدة قبل الحفظ.');
+        return;
+    }
+
+    if (newPass.length < 3) {
+        alert('⚠️ كلمة المرور يجب ألا تقل عن 3 خانات.');
+        return;
+    }
+
+    const accounts = getStoredAccounts();
+    const acc = accounts.find(a => a.username === username);
+    if (acc) {
+        acc.password = newPass;
+        saveStoredAccounts(accounts);
+        logAudit('تعديل كلمة مرور', acc.displayName, '***', '***');
+        renderUsersAdminTable();
+        if (input) input.value = '';
+        alert(`✅ تم تحديث وحفظ كلمة المرور الجديدة لحساب (${acc.displayName}) بنجاح!`);
+    }
+}
+
+function resetAllPasswords() {
+    if (currentRole !== 'admin') {
+        alert('⚠️ عذراً، هذه الصلاحية محصورة بمسؤول النظام (Admin).');
+        return;
+    }
+
+    if (confirm(`هل أنت متأكد من استعادة كافة كلمات المرور الافتراضية الأصلية؟
+
+- Admin: 17025
+- المدير العام: 11111
+- المدقق والمراجع: 11111`)) {
+        saveStoredAccounts(DEFAULT_ACCOUNTS);
+        logAudit('استعادة كلمات المرور الافتراضية', 'كافة المستخدمين', '-', '17025 / 11111');
+        renderUsersAdminTable();
+        alert('✅ تم استعادة كلمات المرور الافتراضية بنجاح!');
+    }
+}
 
 function switchTabMobile(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
@@ -2067,13 +2272,13 @@ function switchTabMobile(tabId, btn) {
     
     if (btn) btn.classList.add('active');
     
-    // Sync desktop tab button
     const deskBtn = document.querySelector(`.st-tab-btn[onclick*="${tabId}"]`);
     if (deskBtn) deskBtn.classList.add('active');
     
     if (tabId === 'tab-dash') updateDashboard();
     if (tabId === 'tab-forms') renderForms();
     if (tabId === 'tab-audit-trail') renderAuditLog();
+    if (tabId === 'tab-users') renderUsersAdminTable();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2086,9 +2291,10 @@ function switchTab(tabId, btn) {
     if (tabId === 'tab-dash') updateDashboard();
     if (tabId === 'tab-forms') renderForms();
     if (tabId === 'tab-audit-trail') renderAuditLog();
+    if (tabId === 'tab-users') renderUsersAdminTable();
 }
 
-// ==================== CHECKLIST ENGINE ====================
+// ==================== CHECKLIST ENGINE (ROLE-BASED PERMISSIONS) ====================
 function renderChecklist(itemsToRender = currentItems) {
     const container = document.getElementById('checklist-items-container');
     if (!container) return;
@@ -2099,6 +2305,8 @@ function renderChecklist(itemsToRender = currentItems) {
         return;
     }
 
+    const isAdm = (currentRole === 'admin');
+
     itemsToRender.forEach(item => {
         const div = document.createElement('div');
         div.className = 'item-card';
@@ -2107,17 +2315,20 @@ function renderChecklist(itemsToRender = currentItems) {
             <div class="nc-extra">
                 <div>
                     <label>🛠️ الإجراء التصحيحي المطلوب</label>
-                    <input type="text" value="${escapeHtml(item.correctiveAction || '')}" placeholder="صف الإجراء التصحيحي المطلوب..."
+                    <input type="text" value="${escapeHtml(item.correctiveAction || '')}" placeholder="${isAdm ? 'صف الإجراء التصحيحي المطلوب...' : 'لا يوجد إجراء مسجل'}"
+                        ${isAdm ? '' : 'readonly style="background:#f8fafc; cursor:default;"'}
                         oninput="updateItemField(${item.id}, 'correctiveAction', this.value)">
                 </div>
                 <div>
                     <label>📅 الموعد المستهدف للإغلاق</label>
                     <input type="date" value="${escapeHtml(item.closureDate || '')}"
+                        ${isAdm ? '' : 'disabled style="background:#f8fafc; cursor:default;"'}
                         onchange="updateItemField(${item.id}, 'closureDate', this.value)">
                 </div>
                 <div>
                     <label>👤 المسؤول عن المتابعة</label>
-                    <input type="text" value="${escapeHtml(item.responsible || '')}" placeholder="اسم المسؤول..."
+                    <input type="text" value="${escapeHtml(item.responsible || '')}" placeholder="${isAdm ? 'اسم المسؤول...' : '-'}"
+                        ${isAdm ? '' : 'readonly style="background:#f8fafc; cursor:default;"'}
                         oninput="updateItemField(${item.id}, 'responsible', this.value)">
                 </div>
             </div>` : '';
@@ -2134,8 +2345,8 @@ function renderChecklist(itemsToRender = currentItems) {
             </div>
             <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px;">
                 <div>
-                    <label style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 4px;">نتيجة التقييم</label>
-                    <select onchange="updateItemEval(${item.id}, this.value)">
+                    <label style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 4px;">نتيجة التقييم ${isAdm ? '' : '<span style="color:#64748b; font-size:11px;">(عرض فقط)</span>'}</label>
+                    <select ${isAdm ? '' : 'disabled style="background:#f1f5f9; cursor:not-allowed;"'} onchange="updateItemEval(${item.id}, this.value)">
                         <option value="C" ${item.eval === 'C' ? 'selected' : ''}>✅ مطابق (C)</option>
                         <option value="NC" ${item.eval === 'NC' ? 'selected' : ''}>❌ غير مطابق (NC)</option>
                         <option value="OFI" ${item.eval === 'OFI' ? 'selected' : ''}>💡 فرصة تحسين (OFI)</option>
@@ -2144,7 +2355,8 @@ function renderChecklist(itemsToRender = currentItems) {
                 </div>
                 <div>
                     <label style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 4px;">الملاحظات وتوصيف الدليل المفحوص</label>
-                    <input type="text" value="${escapeHtml(item.notes)}" placeholder="سجل رقم الوثيقة أو محضر المقابلة المفحوص..."
+                    <input type="text" value="${escapeHtml(item.notes)}" placeholder="${isAdm ? 'سجل رقم الوثيقة أو محضر المقابلة المفحوص...' : 'لا توجد ملاحظات مسجلة'}"
+                        ${isAdm ? '' : 'readonly style="background:#f8fafc; cursor:default;"'}
                         oninput="updateItemNotes(${item.id}, this.value)">
                 </div>
             </div>
@@ -2155,6 +2367,10 @@ function renderChecklist(itemsToRender = currentItems) {
 }
 
 function updateItemEval(id, val) {
+    if (currentRole !== 'admin') {
+        alert('⚠️ تعديل نتائج التقييم محصور بمسؤول النظام (Admin).');
+        return;
+    }
     const item = currentItems.find(x => x.id === id);
     if (item) {
         const oldVal = item.eval;
@@ -2167,6 +2383,7 @@ function updateItemEval(id, val) {
 }
 
 function updateItemNotes(id, val) {
+    if (currentRole !== 'admin') return;
     const item = currentItems.find(x => x.id === id);
     if (item) {
         item.notes = val;
@@ -2175,6 +2392,7 @@ function updateItemNotes(id, val) {
 }
 
 function updateItemField(id, field, val) {
+    if (currentRole !== 'admin') return;
     const item = currentItems.find(x => x.id === id);
     if (item) {
         item[field] = val;
@@ -2183,6 +2401,10 @@ function updateItemField(id, field, val) {
 }
 
 function markAllConforming() {
+    if (currentRole !== 'admin') {
+        alert('⚠️ هذه الصلاحية محصورة بمسؤول النظام (Admin).');
+        return;
+    }
     let count = 0;
     currentItems.forEach(i => {
         if (i.eval === 'Pending') {
@@ -2663,10 +2885,7 @@ async function testEmailAlert(type) {
 
 // Quick login defaults helper
 document.addEventListener('DOMContentLoaded', () => {
-    const uInput = document.getElementById('login-username');
-    const pInput = document.getElementById('login-password');
-    if (uInput && !uInput.value) uInput.value = 'omar';
-    if (pInput && !pInput.value) pInput.value = '11111';
+    onLoginRoleChange();
 });
 
 // Initial setup
@@ -2675,6 +2894,7 @@ renderForms();
 updateDashboard();
 renderAuditLog();
 loadEmailSettings();
+renderUsersAdminTable();
 checkUrlForDirectFormView();
 </script>
 
